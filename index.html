@@ -1,0 +1,33 @@
+<div class="card" style="margin-bottom:18px">
+  <div class="sectionHead">
+    <div>
+      <h2>Conexión</h2>
+      <div class="subtle">Estado del servicio y de la optimización actual</div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
+      <div>
+        <div class="subtle">Folio actual</div>
+        <div id="currentFolio" class="folio">—</div>
+      </div>
+      <div>
+        <div class="subtle">Nombre de optimización</div>
+        <div id="currentOptName" class="folio">—</div>
+      </div>
+    </div>
+
+    <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
+      <div>
+        <div class="subtle">Estado de conexión</div>
+        <div id="connectionBadge" class="folio">Sin validar</div>
+      </div>
+      <div>
+        <button id="refreshBtn">Actualizar catálogos</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px" id="apiStatus" class="status">Presiona “Actualizar catálogos” para validar la conexión.</div>
+</div>
