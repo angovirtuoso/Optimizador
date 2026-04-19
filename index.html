@@ -23,7 +23,6 @@
       --bad:#b91c1c;
       --badBg:#fef2f2;
       --shadow:0 12px 30px rgba(15,23,42,.08);
-      --radius:24px;
     }
 
     body.dark{
@@ -77,18 +76,26 @@
     }
 
     .logoBox{
-      width:88px;
-      height:38px;
+      width:116px;
+      height:44px;
       display:grid;
       place-items:center;
       border:1px solid var(--line);
-      border-radius:12px;
+      border-radius:14px;
       background:#fff;
       box-shadow:var(--shadow);
+      overflow:hidden;
+      padding:4px 8px;
     }
 
     body.dark .logoBox{background:#fff}
-    .logoBox img{max-width:100%;max-height:100%}
+
+    .logoBox img{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      display:block;
+    }
 
     .brandText h1{
       margin:0;
@@ -411,7 +418,7 @@
     <div class="topbar">
       <div class="brand">
         <div class="logoBox">
-          <img id="brandLogo" alt="Prodiesa" />
+          <img id="brandLogo" src="/prodiesa-logo.png" alt="Prodiesa" />
         </div>
         <div class="brandText">
           <h1>PRODIESA OPTIMIZADOR</h1>
@@ -564,7 +571,7 @@
           <div class="kpi"><div class="k">Modelos agregados</div><div class="v" id="kpiModels">0</div></div>
           <div class="kpi"><div class="k">Láminas agregadas</div><div class="v" id="kpiSheets">0</div></div>
           <div class="kpi"><div class="k">Folio actual</div><div class="v" id="kpiFolio">—</div></div>
-          <div class="kpi"><div class="k">Estado</div><div class="v" id="kpiState">Listo</div></div>
+          <div class="kpi"><div class="k">Estado</div><div class="v" id="kpiState">Sin validar</div></div>
         </div>
 
         <div class="card">
@@ -665,20 +672,9 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdV6PChDIr1jeGn-DLmS4VrTlEOw1ANH_nyTFMhBS8CbS-ca1PmjIPH2V5SV9kDR9j/exec";
-    const LOGO_DATA_URL = "data:image/svg+xml;base64," + btoa(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120">
-        <g fill="currentColor">
-          <path d="M72 12c-31 0-58 21-65 50H0v43h25c27 0 49-20 52-46h18l10-47H72z"/>
-          <path d="M138 12c-31 0-58 21-65 50h25c27 0 49 20 52 46h18l10-47h45l11-49h-96z"/>
-          <path d="M259 12h140l-11 49H283l-8 33h104l-10 44H229z"/>
-          <circle cx="114" cy="60" r="20"/>
-        </g>
-      </svg>
-    `);
+    const APPS_SCRIPT_URL = "/api/apps-script";
 
     const state = {
-      apiBaseUrl: APPS_SCRIPT_URL,
       catalogs: {
         modelos: [],
         materiales: [],
@@ -695,7 +691,8 @@
       selectedParts: [],
       selectedSheets: [],
       currentFolio: null,
-      currentOptimizationName: null
+      currentOptimizationName: null,
+      connectionOk: false
     };
 
     const $ = (id) => document.getElementById(id);
@@ -712,15 +709,14 @@
       .replace(/"/g,"&quot;")
       .replace(/'/g,"&#039;");
 
-    $("brandLogo").src = LOGO_DATA_URL;
-
     function syncKpis() {
       $("kpiModels").textContent = String(state.selectedParts.length);
       $("kpiSheets").textContent = String(state.selectedSheets.length);
       $("kpiFolio").textContent = state.currentFolio || "—";
-      $("kpiState").textContent = state.apiBaseUrl ? "Conectado" : "Sin URL";
       $("currentFolio").textContent = state.currentFolio || "—";
       $("currentOptName").textContent = state.currentOptimizationName || "—";
+      $("kpiState").textContent = state.connectionOk ? "Conectado" : "Sin conexión";
+      $("kpiState").style.color = state.connectionOk ? "var(--ok)" : "var(--bad)";
     }
 
     function setStatus(el, msg, kind = "") {
@@ -747,13 +743,13 @@
     }
 
     async function apiCall(action, payload = {}) {
-      if (!state.apiBaseUrl) throw new Error("Servicio no configurado");
-
       let res;
       try {
-        res = await fetch(state.apiBaseUrl, {
+        res = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ action, payload })
         });
       } catch (err) {
@@ -767,7 +763,10 @@
         throw new Error("Respuesta inválida del servicio");
       }
 
-      if (!data.ok) throw new Error(data.error || "Error del servicio");
+      if (!data.ok) {
+        throw new Error(data.error || "Error del servicio");
+      }
+
       return data;
     }
 
@@ -857,6 +856,8 @@
     async function refreshCatalogs() {
       setStatus($("apiStatus"), "Validando conexión y leyendo catálogos…");
       setConnectionBadge("warn", "Validando");
+      state.connectionOk = false;
+      syncKpis();
 
       try {
         const data = await apiCall("getCatalogs");
@@ -870,13 +871,17 @@
         renderCatalogModelDatalist();
         renderSelectors();
 
+        state.connectionOk = true;
         setStatus($("apiStatus"), "Servicio conectado correctamente. Catálogos cargados desde la base.", "ok");
         setConnectionBadge("ok", "Conectado");
       } catch (err) {
+        state.connectionOk = false;
         const msg = String(err && err.message ? err.message : err);
         let friendly = "No se pudo conectar con el servicio.";
         if (msg.toLowerCase().includes("failed to fetch")) {
-          friendly = "No se pudo conectar con el servicio. Revisa la publicación del Web App y vuelve a probar.";
+          friendly = "No se pudo conectar con el servicio. Revisa el proxy en /api/apps-script y vuelve a probar.";
+        } else if (msg.toLowerCase().includes("respuesta inválida")) {
+          friendly = "El servicio respondió con un formato inválido. Revisa el proxy de Vercel.";
         }
         setStatus($("apiStatus"), friendly, "bad");
         setConnectionBadge("bad", "Sin conexión");
