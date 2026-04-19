@@ -1,33 +1,1081 @@
-<div class="card" style="margin-bottom:18px">
-  <div class="sectionHead">
-    <div>
-      <h2>Conexión</h2>
-      <div class="subtle">Estado del servicio y de la optimización actual</div>
-    </div>
-  </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRODIESA OPTIMIZADOR</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --bg2:#e9eef7;
+      --card:#ffffff;
+      --soft:#f8fafc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#dbe4ee;
+      --primary:#0f172a;
+      --primaryText:#ffffff;
+      --blue:#2563eb;
+      --ok:#047857;
+      --okBg:#ecfdf5;
+      --warn:#b45309;
+      --warnBg:#fff7ed;
+      --bad:#b91c1c;
+      --badBg:#fef2f2;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --radius:24px;
+    }
 
-  <div class="row2">
-    <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
-      <div>
-        <div class="subtle">Folio actual</div>
-        <div id="currentFolio" class="folio">—</div>
-      </div>
-      <div>
-        <div class="subtle">Nombre de optimización</div>
-        <div id="currentOptName" class="folio">—</div>
-      </div>
-    </div>
+    body.dark{
+      --bg:#020617;
+      --bg2:#08111f;
+      --card:#0f172a;
+      --soft:#0b1220;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --line:#243244;
+      --primary:#f8fafc;
+      --primaryText:#0f172a;
+      --blue:#60a5fa;
+      --ok:#4ade80;
+      --okBg:#052e1c;
+      --warn:#fbbf24;
+      --warnBg:#2a1f06;
+      --bad:#f87171;
+      --badBg:#2b0b0b;
+      --shadow:none;
+    }
 
-    <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
-      <div>
-        <div class="subtle">Estado de conexión</div>
-        <div id="connectionBadge" class="folio">Sin validar</div>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:linear-gradient(180deg,var(--bg),var(--bg2));
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .app{
+      max-width:1540px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .logoBox{
+      width:88px;
+      height:38px;
+      display:grid;
+      place-items:center;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+
+    body.dark .logoBox{background:#fff}
+    .logoBox img{max-width:100%;max-height:100%}
+
+    .brandText h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:-.03em;
+    }
+
+    .brandText p{
+      margin:2px 0 0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .toolbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button,input,select,textarea{font:inherit}
+
+    button{
+      min-height:42px;
+      border:1px solid var(--line);
+      background:var(--card);
+      color:var(--text);
+      border-radius:14px;
+      padding:0 14px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    button:hover{transform:translateY(-1px)}
+
+    button.primary{
+      background:var(--primary);
+      color:var(--primaryText);
+    }
+
+    button.warn{
+      background:#fff7ed;
+      color:#9a3412;
+      border-color:#fed7aa;
+    }
+
+    body.dark button.warn{
+      background:#2a1f06;
+      color:#fcd34d;
+      border-color:#6b4f08;
+    }
+
+    .switchWrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .switch{
+      position:relative;
+      width:46px;
+      height:28px;
+      display:inline-block;
+    }
+
+    .switch input{display:none}
+
+    .slider{
+      position:absolute;
+      inset:0;
+      background:#cbd5e1;
+      border-radius:999px;
+      transition:.2s;
+    }
+
+    .slider:before{
+      content:"";
+      position:absolute;
+      left:3px;
+      top:3px;
+      width:22px;
+      height:22px;
+      border-radius:50%;
+      background:#fff;
+      transition:.2s;
+    }
+
+    .switch input:checked + .slider{background:#2563eb}
+    .switch input:checked + .slider:before{transform:translateX(18px)}
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .sectionHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .sectionHead h2,.sectionHead h3{
+      margin:0;
+      font-size:22px;
+      letter-spacing:-.03em;
+    }
+
+    .subtle{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:460px minmax(0,1fr);
+      gap:18px;
+    }
+
+    .stack{
+      display:grid;
+      gap:18px;
+    }
+
+    .row2,.row3,.row4,.row5{
+      display:grid;
+      gap:10px;
+    }
+
+    .row2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .row3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .row4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .row5{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+    label{display:block}
+
+    label .lab{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    input,select,textarea{
+      width:100%;
+      min-height:44px;
+      border:1px solid var(--line);
+      background:var(--card);
+      color:var(--text);
+      border-radius:14px;
+      padding:0 14px;
+      outline:none;
+    }
+
+    textarea{
+      min-height:88px;
+      padding:12px 14px;
+      resize:vertical;
+    }
+
+    input:focus,select:focus,textarea:focus{
+      border-color:#60a5fa;
+      box-shadow:0 0 0 3px rgba(96,165,250,.18);
+    }
+
+    .status{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      font-size:13px;
+      line-height:1.45;
+      background:var(--card);
+    }
+
+    .status.ok{
+      background:var(--okBg);
+      color:var(--ok);
+    }
+
+    .status.warn{
+      background:var(--warnBg);
+      color:var(--warn);
+    }
+
+    .status.bad{
+      background:var(--badBg);
+      color:var(--bad);
+    }
+
+    .tableWrap{
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    th,td{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    th{
+      background:rgba(148,163,184,.08);
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .actions{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+
+    .miniBtn{
+      min-height:34px;
+      padding:0 10px;
+      border-radius:12px;
+      font-size:12px;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .kpi{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow);
+    }
+
+    .kpi .k{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .kpi .v{
+      margin-top:6px;
+      font-size:30px;
+      font-weight:700;
+      letter-spacing:-.04em;
+    }
+
+    .folio{
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+
+    .inline{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .modalBack{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.45);
+      backdrop-filter:blur(4px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:50;
+    }
+
+    .modalBack.show{display:flex}
+
+    .modal{
+      width:min(980px,100%);
+      max-height:92vh;
+      overflow:auto;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .modalFooter{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width:1280px){
+      .grid{grid-template-columns:1fr}
+      .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr 1fr}
+    }
+
+    @media (max-width:760px){
+      .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logoBox">
+          <img id="brandLogo" alt="Prodiesa" />
+        </div>
+        <div class="brandText">
+          <h1>PRODIESA OPTIMIZADOR</h1>
+          <p>Catálogos, modelos manuales y persistencia por folio</p>
+        </div>
       </div>
-      <div>
+      <div class="toolbar">
+        <div class="switchWrap">
+          <span>Dark mode</span>
+          <label class="switch">
+            <input id="darkModeToggle" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+        </div>
         <button id="refreshBtn">Actualizar catálogos</button>
+        <button id="openLoadModalBtn">Cargar optimización</button>
+        <button id="openSaveModalBtn" class="primary">Guardar optimización</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="sectionHead">
+        <div>
+          <h2>Conexión</h2>
+          <div class="subtle">Estado del servicio y de la optimización actual</div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
+          <div>
+            <div class="subtle">Folio actual</div>
+            <div id="currentFolio" class="folio">—</div>
+          </div>
+          <div>
+            <div class="subtle">Nombre de optimización</div>
+            <div id="currentOptName" class="folio">—</div>
+          </div>
+        </div>
+
+        <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
+          <div>
+            <div class="subtle">Estado de conexión</div>
+            <div id="connectionBadge" class="folio">Sin validar</div>
+          </div>
+          <div>
+            <button id="reconnectBtn">Reconectar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" id="apiStatus" class="status">Presiona “Actualizar catálogos” para validar la conexión.</div>
+    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Catálogo de modelos</h2>
+              <div class="subtle">Busca modelos oficiales en la base</div>
+            </div>
+            <button id="addCatalogModelBtn">Agregar a optimizador</button>
+          </div>
+
+          <div class="row4" style="margin-bottom:10px">
+            <label><span class="lab">Cliente</span><select id="filterCliente"></select></label>
+            <label><span class="lab">Material</span><select id="filterMaterial"></select></label>
+            <label><span class="lab">Espesor</span><select id="filterEspesor"></select></label>
+            <label><span class="lab">Forma</span><select id="filterForma"></select></label>
+          </div>
+
+          <div class="row3">
+            <label>
+              <span class="lab">Modelo - Cliente</span>
+              <input id="catalogModelSearch" list="catalogModelList" placeholder="Busca por modelo o cliente" />
+              <datalist id="catalogModelList"></datalist>
+            </label>
+            <label>
+              <span class="lab">Cantidad</span>
+              <input id="catalogModelQty" type="number" min="1" value="1" />
+            </label>
+            <div id="catalogModelPreview" class="status">Selecciona un modelo.</div>
+          </div>
+
+          <div style="margin-top:12px" class="inline">
+            <button id="openManualModalBtn">Modelo nuevo / no registrado</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Modelos agregados</h2>
+              <div class="subtle">Estos forman parte de la optimización actual</div>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etiqueta</th>
+                  <th>Material</th>
+                  <th>Medida corte</th>
+                  <th>Cant.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="partsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Láminas</h2>
+              <div class="subtle">Captura las láminas para la optimización actual</div>
+            </div>
+            <button id="addSheetBtn">Agregar a optimizador</button>
+          </div>
+
+          <div class="row5">
+            <label><span class="lab">Material</span><select id="sheetMaterial"></select></label>
+            <label><span class="lab">Espesor</span><select id="sheetEspesor"></select></label>
+            <label><span class="lab">Ancho</span><input id="sheetAncho" type="number" step="0.01" /></label>
+            <label><span class="lab">Largo</span><input id="sheetLargo" type="number" step="0.01" /></label>
+            <label><span class="lab">Cantidad</span><input id="sheetQty" type="number" min="1" value="1" /></label>
+          </div>
+
+          <div style="margin-top:12px" class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Espesor</th>
+                  <th>Tamaño</th>
+                  <th>Cant.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="sheetsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="k">Modelos agregados</div><div class="v" id="kpiModels">0</div></div>
+          <div class="kpi"><div class="k">Láminas agregadas</div><div class="v" id="kpiSheets">0</div></div>
+          <div class="kpi"><div class="k">Folio actual</div><div class="v" id="kpiFolio">—</div></div>
+          <div class="kpi"><div class="k">Estado</div><div class="v" id="kpiState">Listo</div></div>
+        </div>
+
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Persistencia</h2>
+              <div class="subtle">Guardar y cargar optimizaciones por folio y nombre</div>
+            </div>
+          </div>
+          <div id="persistenceStatus" class="status">Aún no has guardado ninguna optimización en esta sesión.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div style="margin-top:12px" id="apiStatus" class="status">Presiona “Actualizar catálogos” para validar la conexión.</div>
-</div>
+  <div id="manualModalBack" class="modalBack">
+    <div class="modal">
+      <div class="sectionHead">
+        <div>
+          <h2>Modelo nuevo / no registrado</h2>
+          <div class="subtle">Se guardará en la hoja Modelos y también se agregará al optimizador</div>
+        </div>
+      </div>
+
+      <div class="row4">
+        <label><span class="lab">Cliente</span><input id="manualCliente" type="text" /></label>
+        <label><span class="lab">Modelo</span><input id="manualModelo" type="text" /></label>
+        <label><span class="lab">Material</span><select id="manualMaterial"></select></label>
+        <label><span class="lab">Espesor</span><select id="manualEspesor"></select></label>
+      </div>
+
+      <div class="row4" style="margin-top:10px">
+        <label><span class="lab">Forma</span><select id="manualForma"></select></label>
+        <label><span class="lab">Acabado</span><select id="manualAcabado"></select></label>
+        <label><span class="lab">Ancho final</span><input id="manualAnchoFinal" type="number" step="0.01" /></label>
+        <label><span class="lab">Largo final</span><input id="manualLargoFinal" type="number" step="0.01" /></label>
+      </div>
+
+      <div class="row4" style="margin-top:10px">
+        <label><span class="lab">Ancho corte</span><input id="manualAnchoCorte" type="number" step="0.01" /></label>
+        <label><span class="lab">Largo corte</span><input id="manualLargoCorte" type="number" step="0.01" /></label>
+        <label><span class="lab">Trim especial</span><input id="manualTrimEspecial" type="number" step="0.01" value="0" /></label>
+        <label><span class="lab">Cantidad</span><input id="manualQty" type="number" min="1" value="1" /></label>
+      </div>
+
+      <div style="margin-top:10px">
+        <label><span class="lab">Notas</span><textarea id="manualNotas"></textarea></label>
+      </div>
+
+      <div class="modalFooter">
+        <button id="closeManualModalBtn">Cancelar</button>
+        <button id="addManualModelBtn" class="primary">Agregar a optimizador</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="saveModalBack" class="modalBack">
+    <div class="modal">
+      <div class="sectionHead">
+        <div>
+          <h2>Guardar optimización</h2>
+          <div class="subtle">Asigna un nombre claro para reconocerla después</div>
+        </div>
+      </div>
+      <div class="row2">
+        <label><span class="lab">Nombre de optimización</span><input id="optimizationName" type="text" placeholder="Ej. Especial Buy Mayo" /></label>
+        <label><span class="lab">Notas</span><input id="optimizationNotes" type="text" placeholder="Opcional" /></label>
+      </div>
+      <div class="modalFooter">
+        <button id="closeSaveModalBtn">Cancelar</button>
+        <button id="saveOptimizationBtn" class="primary">Guardar optimización</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadModalBack" class="modalBack">
+    <div class="modal">
+      <div class="sectionHead">
+        <div>
+          <h2>Cargar optimización</h2>
+          <div class="subtle">Busca por folio</div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <label><span class="lab">Folio</span><input id="folioToLoad" type="text" placeholder="OPT-20260419-0001" /></label>
+        <div class="inline" style="align-items:end">
+          <button id="loadByFolioBtn" class="primary">Cargar</button>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" id="loadStatus" class="status">Escribe un folio y presiona Cargar.</div>
+
+      <div class="modalFooter">
+        <button id="closeLoadModalBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdV6PChDIr1jeGn-DLmS4VrTlEOw1ANH_nyTFMhBS8CbS-ca1PmjIPH2V5SV9kDR9j/exec";
+    const LOGO_DATA_URL = "data:image/svg+xml;base64," + btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120">
+        <g fill="currentColor">
+          <path d="M72 12c-31 0-58 21-65 50H0v43h25c27 0 49-20 52-46h18l10-47H72z"/>
+          <path d="M138 12c-31 0-58 21-65 50h25c27 0 49 20 52 46h18l10-47h45l11-49h-96z"/>
+          <path d="M259 12h140l-11 49H283l-8 33h104l-10 44H229z"/>
+          <circle cx="114" cy="60" r="20"/>
+        </g>
+      </svg>
+    `);
+
+    const state = {
+      apiBaseUrl: APPS_SCRIPT_URL,
+      catalogs: {
+        modelos: [],
+        materiales: [],
+        espesores: [],
+        acabados: [],
+        laminas: []
+      },
+      filters: {
+        cliente: "Todos",
+        material: "Todos",
+        espesor: "Todos",
+        forma: "Todas"
+      },
+      selectedParts: [],
+      selectedSheets: [],
+      currentFolio: null,
+      currentOptimizationName: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const num = (v) => {
+      const n = Number(String(v ?? "").trim().replace(/,/g,""));
+      return Number.isFinite(n) ? n : 0;
+    };
+    const fmt = (v, digits = 1) => new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(num(v));
+    const escapeHtml = (s) => String(s ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+
+    $("brandLogo").src = LOGO_DATA_URL;
+
+    function syncKpis() {
+      $("kpiModels").textContent = String(state.selectedParts.length);
+      $("kpiSheets").textContent = String(state.selectedSheets.length);
+      $("kpiFolio").textContent = state.currentFolio || "—";
+      $("kpiState").textContent = state.apiBaseUrl ? "Conectado" : "Sin URL";
+      $("currentFolio").textContent = state.currentFolio || "—";
+      $("currentOptName").textContent = state.currentOptimizationName || "—";
+    }
+
+    function setStatus(el, msg, kind = "") {
+      el.className = "status";
+      if (kind) el.classList.add(kind);
+      el.innerHTML = msg;
+    }
+
+    function setConnectionBadge(status, text) {
+      const el = $("connectionBadge");
+      el.textContent = text;
+      if (status === "ok") el.style.color = "var(--ok)";
+      else if (status === "warn") el.style.color = "var(--warn)";
+      else if (status === "bad") el.style.color = "var(--bad)";
+      else el.style.color = "var(--text)";
+    }
+
+    function renderSelect(selectId, options, placeholder, current) {
+      const select = $(selectId);
+      const safe = Array.from(new Set(options.filter(Boolean)));
+      select.innerHTML = `${placeholder ? `<option value="">${escapeHtml(placeholder)}</option>` : ""}${safe.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("")}`;
+      if (current && safe.includes(current)) select.value = current;
+      else if (!placeholder && safe.length) select.value = safe[0];
+    }
+
+    async function apiCall(action, payload = {}) {
+      if (!state.apiBaseUrl) throw new Error("Servicio no configurado");
+
+      let res;
+      try {
+        res = await fetch(state.apiBaseUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, payload })
+        });
+      } catch (err) {
+        throw new Error("Failed to fetch");
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error("Respuesta inválida del servicio");
+      }
+
+      if (!data.ok) throw new Error(data.error || "Error del servicio");
+      return data;
+    }
+
+    function currentFilteredModels() {
+      const q = String($("catalogModelSearch").value || "").trim().toLowerCase();
+      return state.catalogs.modelos.filter(m => {
+        if (state.filters.cliente !== "Todos" && m.Cliente !== state.filters.cliente) return false;
+        if (state.filters.material !== "Todos" && m.Material !== state.filters.material) return false;
+        if (state.filters.espesor !== "Todos" && String(m.Espesor) !== String(state.filters.espesor)) return false;
+        if (state.filters.forma !== "Todas" && m.Forma !== state.filters.forma) return false;
+        if (!q) return true;
+        return `${m.Modelo} ${m.Cliente}`.toLowerCase().includes(q);
+      });
+    }
+
+    function renderCatalogFilters() {
+      const modelos = state.catalogs.modelos;
+      renderSelect("filterCliente", ["Todos", ...new Set(modelos.map(m => m.Cliente).filter(Boolean))], "", state.filters.cliente);
+      renderSelect("filterMaterial", ["Todos", ...state.catalogs.materiales], "", state.filters.material);
+      renderSelect("filterEspesor", ["Todos", ...state.catalogs.espesores], "", state.filters.espesor);
+      renderSelect("filterForma", ["Todas", ...new Set(modelos.map(m => m.Forma).filter(Boolean))], "", state.filters.forma);
+    }
+
+    function renderCatalogModelDatalist() {
+      $("catalogModelList").innerHTML = currentFilteredModels().map(m => `<option value="${escapeHtml(`${m.Modelo} - ${m.Cliente}`)}"></option>`).join("");
+      const selected = currentFilteredModels().find(m => `${m.Modelo} - ${m.Cliente}` === $("catalogModelSearch").value.trim());
+      if (!selected) {
+        setStatus($("catalogModelPreview"), "Selecciona un modelo.");
+        return;
+      }
+      setStatus($("catalogModelPreview"), `
+        <div><b>Material:</b> ${escapeHtml(selected.Material)} ${escapeHtml(selected.Espesor)}</div>
+        <div><b>Forma:</b> ${escapeHtml(selected.Forma)}</div>
+        <div><b>Medida final:</b> ${fmt(selected.Ancho_Final)} × ${fmt(selected.Largo_Final)} mm</div>
+        <div><b>Medida corte:</b> ${fmt(selected.Ancho_Corte)} × ${fmt(selected.Largo_Corte)} mm</div>
+        <div><b>Acabado:</b> ${escapeHtml(selected.Acabado || "-")}</div>
+      `, "ok");
+    }
+
+    function renderSelectors() {
+      renderSelect("manualMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
+      renderSelect("manualEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
+      renderSelect("manualForma", ["Rectangular", "Óvalo", "Circular", "Trapecio rectángulo", "Esq. Red."], "", "Rectangular");
+      renderSelect("manualAcabado", state.catalogs.acabados, "Selecciona", "");
+      renderSelect("sheetMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
+      renderSelect("sheetEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
+    }
+
+    function renderPartsTable() {
+      $("partsTbody").innerHTML = state.selectedParts.map(p => `
+        <tr>
+          <td>${escapeHtml(p.etiqueta)}</td>
+          <td>${escapeHtml(p.material)} ${escapeHtml(p.espesor)}mm</td>
+          <td>${fmt(p.anchoCorte)} × ${fmt(p.largoCorte)} mm</td>
+          <td>${fmt(p.cantidad, 0)}</td>
+          <td><div class="actions"><button class="miniBtn" data-del-part="${p.id}">Eliminar</button></div></td>
+        </tr>
+      `).join("");
+      document.querySelectorAll("[data-del-part]").forEach(btn => {
+        btn.onclick = () => {
+          state.selectedParts = state.selectedParts.filter(p => p.id !== btn.dataset.delPart);
+          renderPartsTable();
+          syncKpis();
+        };
+      });
+    }
+
+    function renderSheetsTable() {
+      $("sheetsTbody").innerHTML = state.selectedSheets.map(s => `
+        <tr>
+          <td>${escapeHtml(s.material)}</td>
+          <td>${escapeHtml(s.espesor)}</td>
+          <td>${fmt(s.ancho)} × ${fmt(s.largo)} mm</td>
+          <td>${fmt(s.cantidad, 0)}</td>
+          <td><div class="actions"><button class="miniBtn" data-del-sheet="${s.id}">Eliminar</button></div></td>
+        </tr>
+      `).join("");
+      document.querySelectorAll("[data-del-sheet]").forEach(btn => {
+        btn.onclick = () => {
+          state.selectedSheets = state.selectedSheets.filter(s => s.id !== btn.dataset.delSheet);
+          renderSheetsTable();
+          syncKpis();
+        };
+      });
+    }
+
+    async function refreshCatalogs() {
+      setStatus($("apiStatus"), "Validando conexión y leyendo catálogos…");
+      setConnectionBadge("warn", "Validando");
+
+      try {
+        const data = await apiCall("getCatalogs");
+        state.catalogs.modelos = data.catalogs.modelos || [];
+        state.catalogs.materiales = data.catalogs.materiales || [];
+        state.catalogs.espesores = data.catalogs.espesores || [];
+        state.catalogs.acabados = data.catalogs.acabados || [];
+        state.catalogs.laminas = data.catalogs.laminas || [];
+
+        renderCatalogFilters();
+        renderCatalogModelDatalist();
+        renderSelectors();
+
+        setStatus($("apiStatus"), "Servicio conectado correctamente. Catálogos cargados desde la base.", "ok");
+        setConnectionBadge("ok", "Conectado");
+      } catch (err) {
+        const msg = String(err && err.message ? err.message : err);
+        let friendly = "No se pudo conectar con el servicio.";
+        if (msg.toLowerCase().includes("failed to fetch")) {
+          friendly = "No se pudo conectar con el servicio. Revisa la publicación del Web App y vuelve a probar.";
+        }
+        setStatus($("apiStatus"), friendly, "bad");
+        setConnectionBadge("bad", "Sin conexión");
+      }
+
+      syncKpis();
+    }
+
+    function addCatalogModel() {
+      const match = state.catalogs.modelos.find(m => `${m.Modelo} - ${m.Cliente}` === $("catalogModelSearch").value.trim());
+      if (!match) {
+        setStatus($("apiStatus"), "Selecciona un modelo válido del catálogo.", "warn");
+        return;
+      }
+      state.selectedParts.push({
+        id: uid(),
+        etiqueta: `${match.Modelo} - ${match.Cliente}`,
+        material: match.Material,
+        espesor: String(match.Espesor),
+        anchoCorte: num(match.Ancho_Corte),
+        largoCorte: num(match.Largo_Corte),
+        cantidad: Math.max(1, Math.round(num($("catalogModelQty").value || 1)))
+      });
+      renderPartsTable();
+      syncKpis();
+      setStatus($("apiStatus"), "Modelo agregado a la optimización actual.", "ok");
+    }
+
+    async function addManualModel() {
+      const payload = {
+        Cliente: $("manualCliente").value.trim(),
+        Modelo: $("manualModelo").value.trim(),
+        Material: $("manualMaterial").value,
+        Espesor: $("manualEspesor").value,
+        Forma: $("manualForma").value,
+        Acabado: $("manualAcabado").value,
+        Ancho_Final: num($("manualAnchoFinal").value),
+        Largo_Final: num($("manualLargoFinal").value),
+        Tolerancia_Final: 0,
+        Desbaste: 0,
+        Ancho_Corte: num($("manualAnchoCorte").value) || num($("manualAnchoFinal").value),
+        Largo_Corte: num($("manualLargoCorte").value) || num($("manualLargoFinal").value),
+        Trim_Especial: num($("manualTrimEspecial").value || 0),
+        Origen: "Manual app",
+        Notas: $("manualNotas").value.trim(),
+        Cantidad: Math.max(1, Math.round(num($("manualQty").value || 1)))
+      };
+
+      if (!payload.Cliente || !payload.Modelo || !payload.Material || !payload.Espesor || !(payload.Ancho_Final > 0) || !(payload.Largo_Final > 0)) {
+        setStatus($("apiStatus"), "Completa Cliente, Modelo, Material, Espesor y medidas finales válidas.", "warn");
+        return;
+      }
+
+      try {
+        await apiCall("addManualModel", payload);
+        state.selectedParts.push({
+          id: uid(),
+          etiqueta: `${payload.Modelo} - ${payload.Cliente}`,
+          material: payload.Material,
+          espesor: String(payload.Espesor),
+          anchoCorte: payload.Ancho_Corte,
+          largoCorte: payload.Largo_Corte,
+          cantidad: payload.Cantidad
+        });
+        renderPartsTable();
+        syncKpis();
+        setStatus($("apiStatus"), "Modelo manual guardado en Sheets y agregado al optimizador.", "ok");
+        closeModal("manualModalBack");
+        resetManualForm();
+        await refreshCatalogs();
+      } catch (err) {
+        setStatus($("apiStatus"), escapeHtml(err.message), "bad");
+      }
+    }
+
+    function resetManualForm() {
+      $("manualCliente").value = "";
+      $("manualModelo").value = "";
+      $("manualAnchoFinal").value = "";
+      $("manualLargoFinal").value = "";
+      $("manualAnchoCorte").value = "";
+      $("manualLargoCorte").value = "";
+      $("manualTrimEspecial").value = "0";
+      $("manualQty").value = "1";
+      $("manualNotas").value = "";
+    }
+
+    function addSheet() {
+      const rec = {
+        id: uid(),
+        material: $("sheetMaterial").value,
+        espesor: $("sheetEspesor").value,
+        ancho: num($("sheetAncho").value),
+        largo: num($("sheetLargo").value),
+        cantidad: Math.max(1, Math.round(num($("sheetQty").value || 1)))
+      };
+      if (!rec.material || !rec.espesor || !(rec.ancho > 0) || !(rec.largo > 0)) {
+        setStatus($("apiStatus"), "Completa material, espesor y dimensiones válidas para la lámina.", "warn");
+        return;
+      }
+      state.selectedSheets.push(rec);
+      renderSheetsTable();
+      syncKpis();
+      setStatus($("apiStatus"), "Lámina agregada a la optimización actual.", "ok");
+    }
+
+    async function saveOptimization() {
+      if (!state.selectedParts.length) {
+        setStatus($("persistenceStatus"), "Agrega al menos un modelo antes de guardar.", "warn");
+        return;
+      }
+      if (!state.selectedSheets.length) {
+        setStatus($("persistenceStatus"), "Agrega al menos una lámina antes de guardar.", "warn");
+        return;
+      }
+
+      const name = $("optimizationName").value.trim() || "Sin nombre";
+      const notes = $("optimizationNotes").value.trim();
+
+      try {
+        const data = await apiCall("saveOptimization", {
+          name,
+          notes,
+          parts: state.selectedParts,
+          sheets: state.selectedSheets,
+          metadata: { createdAtClient: new Date().toISOString() }
+        });
+        state.currentFolio = data.folio;
+        state.currentOptimizationName = name;
+        syncKpis();
+        setStatus($("persistenceStatus"), `Optimización guardada correctamente con folio <b>${escapeHtml(data.folio)}</b>.`, "ok");
+        closeModal("saveModalBack");
+      } catch (err) {
+        setStatus($("persistenceStatus"), escapeHtml(err.message), "bad");
+      }
+    }
+
+    async function loadOptimizationByFolio() {
+      const folio = $("folioToLoad").value.trim();
+      if (!folio) {
+        setStatus($("loadStatus"), "Escribe un folio válido.", "warn");
+        return;
+      }
+      try {
+        const data = await apiCall("loadOptimization", { folio });
+        state.currentFolio = data.optimization.folio;
+        state.currentOptimizationName = data.optimization.name || "Sin nombre";
+        state.selectedParts = data.optimization.parts || [];
+        state.selectedSheets = data.optimization.sheets || [];
+        renderPartsTable();
+        renderSheetsTable();
+        syncKpis();
+        setStatus($("persistenceStatus"), `Optimización cargada correctamente desde folio <b>${escapeHtml(folio)}</b>.`, "ok");
+        setStatus($("loadStatus"), `Cargada: <b>${escapeHtml(data.optimization.name || "Sin nombre")}</b>`, "ok");
+        closeModal("loadModalBack");
+      } catch (err) {
+        setStatus($("loadStatus"), escapeHtml(err.message), "bad");
+      }
+    }
+
+    function openModal(id) { $(id).classList.add("show"); }
+    function closeModal(id) { $(id).classList.remove("show"); }
+
+    function bindEvents() {
+      $("darkModeToggle").addEventListener("change", e => document.body.classList.toggle("dark", e.target.checked));
+      $("refreshBtn").addEventListener("click", refreshCatalogs);
+      $("reconnectBtn").addEventListener("click", refreshCatalogs);
+
+      $("filterCliente").addEventListener("change", e => { state.filters.cliente = e.target.value; renderCatalogModelDatalist(); });
+      $("filterMaterial").addEventListener("change", e => { state.filters.material = e.target.value; renderCatalogModelDatalist(); });
+      $("filterEspesor").addEventListener("change", e => { state.filters.espesor = e.target.value; renderCatalogModelDatalist(); });
+      $("filterForma").addEventListener("change", e => { state.filters.forma = e.target.value; renderCatalogModelDatalist(); });
+      $("catalogModelSearch").addEventListener("input", renderCatalogModelDatalist);
+
+      $("addCatalogModelBtn").addEventListener("click", addCatalogModel);
+      $("addSheetBtn").addEventListener("click", addSheet);
+
+      $("openManualModalBtn").addEventListener("click", () => openModal("manualModalBack"));
+      $("closeManualModalBtn").addEventListener("click", () => closeModal("manualModalBack"));
+      $("addManualModelBtn").addEventListener("click", addManualModel);
+
+      $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
+      $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
+      $("saveOptimizationBtn").addEventListener("click", saveOptimization);
+
+      $("openLoadModalBtn").addEventListener("click", () => openModal("loadModalBack"));
+      $("closeLoadModalBtn").addEventListener("click", () => closeModal("loadModalBack"));
+      $("loadByFolioBtn").addEventListener("click", loadOptimizationByFolio);
+
+      ["manualModalBack","saveModalBack","loadModalBack"].forEach(id => {
+        $(id).addEventListener("click", e => {
+          if (e.target.id === id) closeModal(id);
+        });
+      });
+    }
+
+    bindEvents();
+    syncKpis();
+    refreshCatalogs();
+  </script>
+</body>
+</html>
