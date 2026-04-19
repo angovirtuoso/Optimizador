@@ -1,0 +1,8 @@
+{
+  "name": "prodiesa-optimizador",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
