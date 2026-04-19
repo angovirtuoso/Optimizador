@@ -6,21 +6,51 @@ export default async function handler(req, res) {
     });
   }
 
-  const APPS_SCRIPT_URL =
-    "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMV0YL6YBMLnA1UIYHqmaQw1lfZoI3h-yVAMv9E7Qt1uVG6eztb2uJkryRBieOefElxWJMkNmJLL3Dm5vQNovQZ0vTAVfMdLidGq5vYcjJpKBUsUrdeQZxPfiHK58708kYJQ76lKzivXyAjS_s-b1vfBDi-RgeM7ZNOfQULTbLCsXKp4COd3drUIh89hhiEXcBZgtKRM2ZU8-q0HGCBT3PuDWEYGuY7PwLn5nb_JTgvqCqKU4YlZNc6zrX7hDpprvmiYxdQxiWalaB6i7SX2EeQpXBB7Zw&lib=Mo_PpL0cq193QIMYHFekrA0KvG7nEhGPR";
+  const APPS_SCRIPT_EXEC_URL =
+    "https://script.google.com/macros/s/AKfycbxdV6PChDIr1jeGn-DLmS4VrTlEOw1ANH_nyTFMhBS8CbS-ca1PmjIPH2V5SV9kDR9j/exec";
 
   try {
     const payload = req.body || {};
+    const bodyText = JSON.stringify(payload);
 
-    const response = await fetch(APPS_SCRIPT_URL, {
+    // 1) Primer request al /exec SIN seguir redirects automáticamente
+    const firstResponse = await fetch(APPS_SCRIPT_EXEC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "text/plain;charset=utf-8"
       },
-      body: JSON.stringify(payload)
+      body: bodyText,
+      redirect: "manual"
     });
 
-    const text = await response.text();
+    let finalResponse = firstResponse;
+
+    // 2) Si Google responde con redirect, seguimos manualmente
+    if (
+      firstResponse.status >= 300 &&
+      firstResponse.status < 400
+    ) {
+      const location = firstResponse.headers.get("location");
+
+      if (!location) {
+        return res.status(502).json({
+          ok: false,
+          error: "Apps Script respondió con redirect sin Location header"
+        });
+      }
+
+      // 3) Reenviamos el MISMO POST a la URL final
+      finalResponse = await fetch(location, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: bodyText,
+        redirect: "manual"
+      });
+    }
+
+    const text = await finalResponse.text();
 
     let data;
     try {
@@ -29,6 +59,7 @@ export default async function handler(req, res) {
       return res.status(502).json({
         ok: false,
         error: "Respuesta inválida desde Apps Script",
+        status: finalResponse.status,
         raw: text
       });
     }
