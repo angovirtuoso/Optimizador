@@ -24,7 +24,6 @@
       --shadow:0 12px 26px rgba(15,23,42,.08);
       --fs-xs:12px;
       --fs-sm:13px;
-      --fs-md:14px;
       --fs-lg:18px;
     }
 
@@ -190,6 +189,7 @@
       text-align:center;
       overflow:hidden;
       transform-origin:center center;
+      color:#0f172a;
     }
     .placementLabel,
     .placementSub{
@@ -1174,6 +1174,7 @@
 
         const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
         const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
+        const totalUsedWaste = usedPlans.reduce((acc, p) => acc + p.wasteArea, 0);
 
         state.plans = groupPlans(usedPlans);
         state.activePlanIndex = 0;
@@ -1182,7 +1183,7 @@
           placedParts,
           yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
           usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
-          waste: Math.max(0, totalLoadedArea - placedArea),
+          waste: totalUsedWaste,
           unplaced
         };
 
@@ -1277,8 +1278,8 @@
     function fitPlacementText(textEl, boxEl, isVertical) {
       const boxRect = boxEl.getBoundingClientRect();
 
-      let availableWidth = Math.max(8, boxRect.width - 6);
-      let availableHeight = Math.max(8, boxRect.height - 6);
+      let availableWidth = Math.max(8, boxRect.width - 8);
+      let availableHeight = Math.max(8, boxRect.height - 8);
 
       if (isVertical) {
         const temp = availableWidth;
@@ -1290,7 +1291,7 @@
       const subs = [...textEl.querySelectorAll(".placementSub")];
 
       let maxFont = 18;
-      let minFont = 3.2;
+      let minFont = 4;
       let best = minFont;
 
       function applySize(size) {
@@ -1299,18 +1300,18 @@
           label.style.lineHeight = "1.02";
         }
         subs.forEach(sub => {
-          sub.style.fontSize = `${Math.max(size * 0.92, 3)}px`;
+          sub.style.fontSize = `${Math.max(size * 0.9, 3.6)}px`;
           sub.style.lineHeight = "1.02";
         });
       }
 
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 20; i++) {
         const mid = (minFont + maxFont) / 2;
         applySize(mid);
 
         const fits =
-          textEl.scrollWidth <= availableWidth + 0.5 &&
-          textEl.scrollHeight <= availableHeight + 0.5;
+          textEl.scrollWidth <= availableWidth + 1 &&
+          textEl.scrollHeight <= availableHeight + 1;
 
         if (fits) {
           best = mid;
@@ -1383,13 +1384,10 @@
         const isVertical = p.h > p.w;
         if (isVertical) {
           text.style.transform = "rotate(-90deg)";
-          text.style.width = Math.max(p.h - 6, 14) + "px";
-          text.style.maxWidth = Math.max(p.h - 6, 14) + "px";
-        } else {
-          text.style.width = Math.max(p.w - 6, 14) + "px";
-          text.style.maxWidth = Math.max(p.w - 6, 14) + "px";
         }
 
+        text.style.width = "calc(100% - 6px)";
+        text.style.maxWidth = "calc(100% - 6px)";
         text.style.padding = "1px";
         text.style.gap = "1px";
 
@@ -1605,8 +1603,6 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
     }
 
     async function saveOptimization() {
-      console.log("saveOptimization() disparado");
-
       const btn = $("saveOptimizationBtn");
       const name = $("optimizationName").value.trim() || "Sin nombre";
       const notes = $("optimizationNotes").value.trim();
