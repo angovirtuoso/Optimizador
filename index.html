@@ -270,12 +270,6 @@
         background:#fff !important;
       }
       .print-only{display:block !important}
-      .print-cover{
-        margin-bottom:12px;
-        border:1px solid #999;
-        border-radius:14px;
-        padding:12px;
-      }
       .print-cover-head{
         display:flex;
         justify-content:space-between;
@@ -1312,6 +1306,24 @@
       return { labelSize, subSize };
     }
 
+    function getPlacementTextMode(p, plan) {
+      const boxW = (p.w / plan.stock.ancho) * 100;
+      const boxH = (p.h / plan.stock.largo) * 100;
+
+      const minSide = Math.min(boxW, boxH);
+      const areaPct = boxW * boxH;
+
+      if (areaPct < 0.9 || minSide < 2.8) {
+        return "label-only";
+      }
+
+      if (areaPct < 2.2 || minSide < 4.6) {
+        return "label-final";
+      }
+
+      return "full";
+    }
+
     function drawSheet(plan, container) {
       container.innerHTML = "";
 
@@ -1371,6 +1383,7 @@
 
         const isVertical = p.h > p.w;
         const sizes = getPlacementFontSizes(p, plan);
+        const textMode = getPlacementTextMode(p, plan);
 
         if (isVertical) {
           text.style.transform = "rotate(-90deg)";
@@ -1384,11 +1397,21 @@
         text.style.padding = "1px";
         text.style.gap = "1px";
 
-        text.innerHTML = `
-          <div class="placementLabel" style="font-size:${sizes.labelSize}px;">${escapeHtml(p.etiqueta)}</div>
-          <div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</div>
-          <div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</div>
-        `;
+        let labelHtml = `<div class="placementLabel" style="font-size:${sizes.labelSize}px;">${escapeHtml(p.etiqueta)}</div>`;
+        let finalHtml = `<div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</div>`;
+        let cutHtml = `<div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</div>`;
+
+        if (textMode === "label-only") {
+          text.innerHTML = labelHtml;
+        } else if (textMode === "label-final") {
+          text.innerHTML = labelHtml + finalHtml;
+        } else {
+          text.innerHTML = labelHtml + finalHtml + cutHtml;
+        }
+
+        box.title = `${p.etiqueta}
+Final: ${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}
+Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
         inner.appendChild(text);
         box.appendChild(inner);
@@ -1489,57 +1512,21 @@
       syncKpis();
     }
 
-    function summarizeAllParts() {
+    function summarizePlanModels(plan) {
       const map = new Map();
-      state.selectedParts.forEach(p => {
-        const key = `${p.etiqueta}__${p.material}__${p.espesor}__${p.forma}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
+      plan.placements.forEach(p => {
+        const key = `${p.etiqueta}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
         if (!map.has(key)) {
           map.set(key, {
             etiqueta: p.etiqueta,
-            material: p.material,
-            espesor: p.espesor,
-            forma: p.forma,
+            qty: 0,
             final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
-            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`,
-            qty: 0
+            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`
           });
         }
-        map.get(key).qty += p.cantidad;
+        map.get(key).qty += 1;
       });
       return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
-    }
-
-    function summarizeLoadedSheets() {
-      const loadedMap = new Map();
-      state.selectedSheets.forEach(s => {
-        const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
-        if (!loadedMap.has(key)) {
-          loadedMap.set(key, {
-            material: s.material,
-            espesor: s.espesor,
-            size: `${fmt(s.ancho)} × ${fmt(s.largo)}`,
-            loaded: 0,
-            used: 0
-          });
-        }
-        loadedMap.get(key).loaded += s.cantidad;
-      });
-
-      (state.plans || []).forEach(p => {
-        const key = `${p.stock.material}__${p.stock.espesor}__${p.stock.ancho}__${p.stock.largo}`;
-        if (!loadedMap.has(key)) {
-          loadedMap.set(key, {
-            material: p.stock.material,
-            espesor: p.stock.espesor,
-            size: `${fmt(p.stock.ancho)} × ${fmt(p.stock.largo)}`,
-            loaded: 0,
-            used: 0
-          });
-        }
-        loadedMap.get(key).used += p.count || 1;
-      });
-
-      return { rows: [...loadedMap.values()] };
     }
 
     function buildPrintArea() {
