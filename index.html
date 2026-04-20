@@ -1095,70 +1095,104 @@
       return groups;
     }
 
-    function optimize() {
-      if (!state.selectedParts.length) {
-        setStatus($("noticeBox"), "Agrega al menos un modelo antes de optimizar.", "warn");
-        return;
-      }
-      if (!state.selectedSheets.length) {
-        setStatus($("noticeBox"), "Agrega al menos una lámina antes de optimizar.", "warn");
-        return;
-      }
+    function summarizePlanModels(plan) {
+      const map = new Map();
 
-      const allSheets = expandSheets();
-      const allParts = expandParts().sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
-      const sheetInstances = allSheets.map(makeSheet);
-      const unplaced = [];
-      let placedArea = 0;
-      let placedParts = 0;
+      (plan.placements || []).forEach(p => {
+        const key = [
+          p.etiqueta || "",
+          p.material || "",
+          p.espesor || "",
+          p.anchoFinal || 0,
+          p.largoFinal || 0,
+          p.anchoCorteBase || 0,
+          p.largoCorteBase || 0
+        ].join("__");
 
-      allParts.forEach(part => {
-        const compatible = sheetInstances.filter(sh => sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor));
-        let placed = false;
-        for (const sh of compatible) {
-          if (placeInSheet(sh, part)) {
-            placed = true;
-            placedArea += part.area;
-            placedParts += 1;
-            break;
-          }
+        if (!map.has(key)) {
+          map.set(key, {
+            etiqueta: p.etiqueta || "",
+            qty: 0,
+            final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
+            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`
+          });
         }
-        if (!placed) unplaced.push(part);
+
+        map.get(key).qty += 1;
       });
 
-      const usedPlans = sheetInstances
-        .filter(sh => sh.placements.length)
-        .map(sh => {
-          const usedArea = area(sh.stock.ancho, sh.stock.largo);
-          const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
-          return {
-            id: uid(),
-            stock: sh.stock,
-            placements: sh.placements,
-            usedArea,
-            placedArea: pArea,
-            wasteArea: Math.max(0, usedArea - pArea),
-            utilization: usedArea ? (pArea / usedArea) * 100 : 0
-          };
+      return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
+    }
+
+    function optimize() {
+      try {
+        if (!state.selectedParts.length) {
+          setStatus($("noticeBox"), "Agrega al menos un modelo antes de optimizar.", "warn");
+          return;
+        }
+        if (!state.selectedSheets.length) {
+          setStatus($("noticeBox"), "Agrega al menos una lámina antes de optimizar.", "warn");
+          return;
+        }
+
+        const allSheets = expandSheets();
+        const allParts = expandParts().sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+        const sheetInstances = allSheets.map(makeSheet);
+        const unplaced = [];
+        let placedArea = 0;
+        let placedParts = 0;
+
+        allParts.forEach(part => {
+          const compatible = sheetInstances.filter(sh => sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor));
+          let placed = false;
+          for (const sh of compatible) {
+            if (placeInSheet(sh, part)) {
+              placed = true;
+              placedArea += part.area;
+              placedParts += 1;
+              break;
+            }
+          }
+          if (!placed) unplaced.push(part);
         });
 
-      const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
-      const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
+        const usedPlans = sheetInstances
+          .filter(sh => sh.placements.length)
+          .map(sh => {
+            const usedArea = area(sh.stock.ancho, sh.stock.largo);
+            const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
+            return {
+              id: uid(),
+              stock: sh.stock,
+              placements: sh.placements,
+              usedArea,
+              placedArea: pArea,
+              wasteArea: Math.max(0, usedArea - pArea),
+              utilization: usedArea ? (pArea / usedArea) * 100 : 0
+            };
+          });
 
-      state.plans = groupPlans(usedPlans);
-      state.activePlanIndex = 0;
-      state.summary = {
-        usedSheets: usedPlans.length,
-        placedParts,
-        yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
-        usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
-        waste: Math.max(0, totalLoadedArea - placedArea),
-        unplaced
-      };
+        const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
+        const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
 
-      renderPlans();
-      syncKpis();
-      updateNotices();
+        state.plans = groupPlans(usedPlans);
+        state.activePlanIndex = 0;
+        state.summary = {
+          usedSheets: usedPlans.length,
+          placedParts,
+          yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
+          usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
+          waste: Math.max(0, totalLoadedArea - placedArea),
+          unplaced
+        };
+
+        renderPlans();
+        syncKpis();
+        updateNotices();
+      } catch (err) {
+        console.error("Error en optimize():", err);
+        setStatus($("noticeBox"), `Error al optimizar: ${escapeHtml(err.message)}`, "bad");
+      }
     }
 
     function renderPlans() {
