@@ -200,7 +200,6 @@
     }
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
-    /* PRINT */
     .print-only{display:none}
     .page-break{break-before:page; page-break-before:always}
     @page{size:auto; margin:12mm}
@@ -224,6 +223,7 @@
       .switchWrap,
       #refreshBtn,
       #optimizeBtn,
+      #printBtn,
       #openLoadModalBtn,
       #openSaveModalBtn{
         display:none !important;
@@ -491,7 +491,7 @@
       <div class="sectionHead">
         <div>
           <h2>Modelo nuevo / no registrado</h2>
-          <div class="subtle">Se agrega al optimizador. El guardado a base se conecta después.</div>
+          <div class="subtle">Se agrega al optimizador y también se guarda en la base.</div>
         </div>
       </div>
 
@@ -532,7 +532,7 @@
       <div class="sectionHead">
         <div>
           <h2>Guardar optimización</h2>
-          <div class="subtle">Captura el nombre. El backend de guardado se conecta después.</div>
+          <div class="subtle">Guarda el folio, nombre y payload completo de la optimización</div>
         </div>
       </div>
       <div class="row2">
@@ -551,7 +551,7 @@
       <div class="sectionHead">
         <div>
           <h2>Cargar optimización</h2>
-          <div class="subtle">El backend se conecta después.</div>
+          <div class="subtle">Carga una optimización guardada por folio</div>
         </div>
       </div>
 
@@ -635,16 +635,51 @@
       else if (!placeholder && safe.length) select.value = safe[0];
     }
 
-    async function apiCall(action) {
-      if (action !== "getCatalogs") throw new Error("Acción aún no implementada: " + action);
-      const res = await fetch("/api/getCatalogs", { method: "GET" });
+    async function apiCall(action, payload = {}) {
+      let url = "";
+      let options = {};
+
+      if (action === "getCatalogs") {
+        url = "/api/getCatalogs";
+        options = { method: "GET" };
+      } else if (action === "addManualModel") {
+        url = "/api/addManualModel";
+        options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        };
+      } else if (action === "saveOptimization") {
+        url = "/api/saveOptimization";
+        options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        };
+      } else if (action === "loadOptimization") {
+        url = "/api/loadOptimization";
+        options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        };
+      } else {
+        throw new Error("Acción aún no implementada: " + action);
+      }
+
+      const res = await fetch(url, options);
+
       let data;
       try {
         data = await res.json();
       } catch {
         throw new Error("Respuesta inválida del servicio");
       }
-      if (!data.ok) throw new Error(data.error || "Error del servicio");
+
+      if (!data.ok) {
+        throw new Error(data.error || "Error del servicio");
+      }
+
       return data;
     }
 
@@ -818,7 +853,7 @@
       updateNotices();
     }
 
-    function addManualModel() {
+    async function addManualModel() {
       const cliente = $("manualCliente").value.trim();
       const modelo = $("manualModelo").value.trim();
       const material = $("manualMaterial").value;
@@ -840,28 +875,57 @@
 
       const trim = shapeTrimPerSide(forma, trimManual);
 
-      state.selectedParts.push({
-        id: uid(),
-        etiqueta: `${modelo} - ${cliente}`,
-        material,
-        espesor,
-        forma,
-        acabado,
-        anchoFinal,
-        largoFinal,
-        anchoCorteBase,
-        largoCorteBase,
-        anchoCorteOpt: anchoCorteBase + trim * 2,
-        largoCorteOpt: largoCorteBase + trim * 2,
-        trimEspecial: trim,
-        cantidad,
-        notas
-      });
+      const payload = {
+        Activo: "Si",
+        Cliente: cliente,
+        Modelo: modelo,
+        Etiqueta: `${modelo} - ${cliente}`,
+        Familia: "",
+        Material: material,
+        Espesor: espesor,
+        Forma: forma,
+        Acabado: acabado,
+        Ancho_Final: anchoFinal,
+        Largo_Final: largoFinal,
+        Tolerancia_Final: 0,
+        Desbaste: 0,
+        Ancho_Corte: anchoCorteBase,
+        Largo_Corte: largoCorteBase,
+        Trim_Especial: trim,
+        Origen: "Manual app",
+        Notas: notas,
+      };
 
-      resetManualForm();
-      closeModal("manualModalBack");
-      renderPartsTable();
-      updateNotices();
+      try {
+        await apiCall("addManualModel", payload);
+
+        state.selectedParts.push({
+          id: uid(),
+          etiqueta: `${modelo} - ${cliente}`,
+          material,
+          espesor,
+          forma,
+          acabado,
+          anchoFinal,
+          largoFinal,
+          anchoCorteBase,
+          largoCorteBase,
+          anchoCorteOpt: anchoCorteBase + trim * 2,
+          largoCorteOpt: largoCorteBase + trim * 2,
+          trimEspecial: trim,
+          cantidad,
+          notas
+        });
+
+        resetManualForm();
+        closeModal("manualModalBack");
+        renderPartsTable();
+        await refreshCatalogs();
+        updateNotices();
+        setStatus($("noticeBox"), "Modelo manual guardado y agregado al optimizador.", "ok");
+      } catch (err) {
+        setStatus($("noticeBox"), `No se pudo guardar el modelo manual. ${escapeHtml(err.message)}`, "bad");
+      }
     }
 
     function resetManualForm() {
@@ -1346,8 +1410,57 @@
       syncKpis();
     }
 
-    function notImplemented(actionName) {
-      setStatus($("noticeBox"), `${actionName} todavía no está conectado al backend nuevo.`, "warn");
+    function summarizeAllParts() {
+      const map = new Map();
+      state.selectedParts.forEach(p => {
+        const key = `${p.etiqueta}__${p.material}__${p.espesor}__${p.forma}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            etiqueta: p.etiqueta,
+            material: p.material,
+            espesor: p.espesor,
+            forma: p.forma,
+            final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
+            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`,
+            qty: 0
+          });
+        }
+        map.get(key).qty += p.cantidad;
+      });
+      return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
+    }
+
+    function summarizeLoadedSheets() {
+      const loadedMap = new Map();
+      state.selectedSheets.forEach(s => {
+        const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
+        if (!loadedMap.has(key)) {
+          loadedMap.set(key, {
+            material: s.material,
+            espesor: s.espesor,
+            size: `${fmt(s.ancho)} × ${fmt(s.largo)}`,
+            loaded: 0,
+            used: 0
+          });
+        }
+        loadedMap.get(key).loaded += s.cantidad;
+      });
+
+      (state.plans || []).forEach(p => {
+        const key = `${p.stock.material}__${p.stock.espesor}__${p.stock.ancho}__${p.stock.largo}`;
+        if (!loadedMap.has(key)) {
+          loadedMap.set(key, {
+            material: p.stock.material,
+            espesor: p.stock.espesor,
+            size: `${fmt(p.stock.ancho)} × ${fmt(p.stock.largo)}`,
+            loaded: 0,
+            used: 0
+          });
+        }
+        loadedMap.get(key).used += p.count || 1;
+      });
+
+      return { rows: [...loadedMap.values()] };
     }
 
     function buildPrintArea() {
@@ -1518,59 +1631,6 @@
       });
     }
 
-    function summarizeAllParts() {
-      const map = new Map();
-      state.selectedParts.forEach(p => {
-        const key = `${p.etiqueta}__${p.material}__${p.espesor}__${p.forma}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
-        if (!map.has(key)) {
-          map.set(key, {
-            etiqueta: p.etiqueta,
-            material: p.material,
-            espesor: p.espesor,
-            forma: p.forma,
-            final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
-            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`,
-            qty: 0
-          });
-        }
-        map.get(key).qty += p.cantidad;
-      });
-      return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
-    }
-
-    function summarizeLoadedSheets() {
-      const loadedMap = new Map();
-      state.selectedSheets.forEach(s => {
-        const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
-        if (!loadedMap.has(key)) {
-          loadedMap.set(key, {
-            material: s.material,
-            espesor: s.espesor,
-            size: `${fmt(s.ancho)} × ${fmt(s.largo)}`,
-            loaded: 0,
-            used: 0
-          });
-        }
-        loadedMap.get(key).loaded += s.cantidad;
-      });
-
-      (state.plans || []).forEach(p => {
-        const key = `${p.stock.material}__${p.stock.espesor}__${p.stock.ancho}__${p.stock.largo}`;
-        if (!loadedMap.has(key)) {
-          loadedMap.set(key, {
-            material: p.stock.material,
-            espesor: p.stock.espesor,
-            size: `${fmt(p.stock.ancho)} × ${fmt(p.stock.largo)}`,
-            loaded: 0,
-            used: 0
-          });
-        }
-        loadedMap.get(key).used += p.count || 1;
-      });
-
-      return { rows: [...loadedMap.values()] };
-    }
-
     function doPrint() {
       if (!state.plans.length) {
         setStatus($("noticeBox"), "Primero debes optimizar para poder imprimir o guardar PDF.", "warn");
@@ -1578,6 +1638,76 @@
       }
       buildPrintArea();
       window.print();
+    }
+
+    async function saveOptimization() {
+      const name = $("optimizationName").value.trim() || "Sin nombre";
+      const notes = $("optimizationNotes").value.trim();
+
+      if (!state.selectedParts.length) {
+        setStatus($("noticeBox"), "No puedes guardar una optimización vacía. Agrega modelos primero.", "warn");
+        return;
+      }
+
+      try {
+        const data = await apiCall("saveOptimization", {
+          name,
+          notes,
+          parts: state.selectedParts,
+          sheets: state.selectedSheets,
+          plans: state.plans,
+          summary: state.summary
+        });
+
+        state.currentFolio = data.folio;
+        state.currentOptimizationName = name;
+        syncKpis();
+        closeModal("saveModalBack");
+        setStatus($("noticeBox"), `Optimización guardada correctamente con folio ${escapeHtml(data.folio)}.`, "ok");
+      } catch (err) {
+        setStatus($("noticeBox"), `No se pudo guardar la optimización. ${escapeHtml(err.message)}`, "bad");
+      }
+    }
+
+    async function loadOptimizationByFolio() {
+      const folio = $("folioToLoad").value.trim();
+
+      if (!folio) {
+        setStatus($("loadStatus"), "Debes escribir un folio.", "warn");
+        return;
+      }
+
+      try {
+        const data = await apiCall("loadOptimization", { folio });
+        const opt = data.optimization || {};
+
+        state.currentFolio = opt.folio || folio;
+        state.currentOptimizationName = opt.name || "Sin nombre";
+        state.selectedParts = Array.isArray(opt.parts) ? opt.parts : [];
+        state.selectedSheets = Array.isArray(opt.sheets) ? opt.sheets : [];
+        state.plans = Array.isArray(opt.plans) ? opt.plans : [];
+        state.summary = opt.summary || {
+          usedSheets: 0,
+          placedParts: 0,
+          yieldLoaded: 0,
+          usedYield: 0,
+          waste: 0,
+          unplaced: []
+        };
+        state.activePlanIndex = 0;
+
+        renderPartsTable();
+        renderSheetsTable();
+        renderPlans();
+        updateNotices();
+        syncKpis();
+
+        setStatus($("loadStatus"), `Optimización ${escapeHtml(folio)} cargada correctamente.`, "ok");
+        setStatus($("noticeBox"), `Se cargó la optimización ${escapeHtml(folio)}.`, "ok");
+        closeModal("loadModalBack");
+      } catch (err) {
+        setStatus($("loadStatus"), `No se pudo cargar la optimización. ${escapeHtml(err.message)}`, "bad");
+      }
     }
 
     function openModal(id) { $(id).classList.add("show"); }
@@ -1607,11 +1737,11 @@
 
       $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
-      $("saveOptimizationBtn").addEventListener("click", () => notImplemented("Guardar optimización"));
+      $("saveOptimizationBtn").addEventListener("click", saveOptimization);
 
       $("openLoadModalBtn").addEventListener("click", () => openModal("loadModalBack"));
       $("closeLoadModalBtn").addEventListener("click", () => closeModal("loadModalBack"));
-      $("loadByFolioBtn").addEventListener("click", () => notImplemented("Cargar optimización"));
+      $("loadByFolioBtn").addEventListener("click", loadOptimizationByFolio);
 
       ["manualModalBack","saveModalBack","loadModalBack"].forEach(id => {
         $(id).addEventListener("click", e => {
