@@ -178,10 +178,28 @@
     body.dark .sheetCanvas{background:#0b1220;border-color:#334155}
 
     .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px}
-    .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:6px;text-align:center;line-height:1.12}
-    .placementText{max-width:100%}
-    .placementLabel{font-size:clamp(8px,0.95vw,12px);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .placementSub{font-size:clamp(7px,0.85vw,10px)}
+    .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:4px;text-align:center;line-height:1.12}
+    .placementText{
+      width:100%;
+      max-width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:1px;
+      text-align:center;
+      overflow:hidden;
+    }
+    .placementLabel,
+    .placementSub{
+      line-height:1.02;
+      max-width:100%;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+    .placementLabel{font-weight:700}
+    .placementSub{font-weight:400}
     .shapeVisual{position:absolute;border:1px solid rgba(15,23,42,.7)}
 
     .miniSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -210,10 +228,7 @@
         color:#000 !important;
         font-size:11px;
       }
-      .app{
-        max-width:none;
-        padding:0;
-      }
+      .app{max-width:none;padding:0}
       .topbar,
       .grid > .stack:first-child,
       .tabs,
@@ -228,12 +243,8 @@
       #openSaveModalBtn{
         display:none !important;
       }
-      .grid{
-        display:block !important;
-      }
-      .stack{
-        display:block !important;
-      }
+      .grid{display:block !important}
+      .stack{display:block !important}
       .card,.kpi,.sheetCard,.summaryCard,.tableWrap,.sheetViewport,.miniBox{
         box-shadow:none !important;
         background:#fff !important;
@@ -258,9 +269,7 @@
         padding:0 !important;
         background:#fff !important;
       }
-      .print-only{
-        display:block !important;
-      }
+      .print-only{display:block !important}
       .print-cover{
         margin-bottom:12px;
         border:1px solid #999;
@@ -279,9 +288,7 @@
         height:44px;
         object-fit:contain;
       }
-      .print-section{
-        margin-top:10px;
-      }
+      .print-section{margin-top:10px}
       .print-section h3{
         margin:0 0 8px 0;
         font-size:14px;
@@ -293,21 +300,21 @@
       .print-plan{
         break-inside:avoid;
         page-break-inside:avoid;
-        margin-top:18px;
+        break-after:page;
+        page-break-after:always;
+        margin-top:0;
+      }
+      .print-plan:last-child{
+        break-after:auto;
+        page-break-after:auto;
       }
       .print-plan .sheetCanvas{
         max-width:720px;
         margin:0;
       }
-      .resultLayout{
-        display:block !important;
-      }
-      .summaryCard{
-        margin-top:10px;
-      }
-      .pill{
-        border:1px solid #999;
-      }
+      .resultLayout{display:block !important}
+      .summaryCard{margin-top:10px}
+      .pill{border:1px solid #999}
     }
 
     @media (max-width:1280px){
@@ -535,10 +542,14 @@
           <div class="subtle">Guarda el folio, nombre y payload completo de la optimización</div>
         </div>
       </div>
+
       <div class="row2">
         <label><span class="lab">Nombre de optimización</span><input id="optimizationName" type="text" placeholder="Ej. Especial Buy Mayo" /></label>
         <label><span class="lab">Notas</span><input id="optimizationNotes" type="text" placeholder="Opcional" /></label>
       </div>
+
+      <div id="saveStatus" class="status" style="margin-top:14px;">Captura el nombre y guarda la optimización.</div>
+
       <div class="modalFooter">
         <button id="closeSaveModalBtn">Cancelar</button>
         <button id="saveOptimizationBtn" class="primary">Guardar optimización</button>
@@ -1250,6 +1261,57 @@
       drawSheet(plan, $("sheetCanvas"));
     }
 
+    function getPlacementFontSizes(p, plan) {
+      const boxW = (p.w / plan.stock.ancho) * 100;
+      const boxH = (p.h / plan.stock.largo) * 100;
+
+      const minSide = Math.min(boxW, boxH);
+      const maxSide = Math.max(boxW, boxH);
+      const areaPct = boxW * boxH;
+
+      let labelSize = 11;
+      let subSize = 10;
+
+      if (areaPct < 0.35 || minSide < 1.8) {
+        labelSize = 4.8;
+        subSize = 4.6;
+      } else if (areaPct < 0.6 || minSide < 2.3) {
+        labelSize = 5.2;
+        subSize = 5;
+      } else if (areaPct < 0.9 || minSide < 2.8) {
+        labelSize = 5.8;
+        subSize = 5.5;
+      } else if (areaPct < 1.3 || minSide < 3.4) {
+        labelSize = 6.3;
+        subSize = 6;
+      } else if (areaPct < 1.9 || minSide < 4.2) {
+        labelSize = 7;
+        subSize = 6.6;
+      } else if (areaPct < 2.8 || minSide < 5.2) {
+        labelSize = 7.8;
+        subSize = 7.2;
+      } else if (areaPct < 4.2 || minSide < 6.4) {
+        labelSize = 8.6;
+        subSize = 7.8;
+      } else if (areaPct < 6 || minSide < 7.8) {
+        labelSize = 9.4;
+        subSize = 8.5;
+      } else if (areaPct < 8.5 || minSide < 9.5) {
+        labelSize = 10.2;
+        subSize = 9.1;
+      } else {
+        labelSize = 11;
+        subSize = 9.8;
+      }
+
+      if (maxSide > 30 && minSide > 8) {
+        labelSize = Math.min(labelSize + 0.6, 12);
+        subSize = Math.min(subSize + 0.4, 11);
+      }
+
+      return { labelSize, subSize };
+    }
+
     function drawSheet(plan, container) {
       container.innerHTML = "";
 
@@ -1303,14 +1365,31 @@
 
         const inner = document.createElement("div");
         inner.className = "placementInner";
+
         const text = document.createElement("div");
         text.className = "placementText";
-        text.style.transform = p.h > p.w ? "rotate(-90deg)" : "none";
+
+        const isVertical = p.h > p.w;
+        const sizes = getPlacementFontSizes(p, plan);
+
+        if (isVertical) {
+          text.style.transform = "rotate(-90deg)";
+          text.style.width = Math.max(p.h - 6, 18) + "px";
+          text.style.maxWidth = Math.max(p.h - 6, 18) + "px";
+        } else {
+          text.style.width = "100%";
+          text.style.maxWidth = "100%";
+        }
+
+        text.style.padding = "1px";
+        text.style.gap = "1px";
+
         text.innerHTML = `
-          <div class="placementLabel">${escapeHtml(p.etiqueta)}</div>
-          <div class="placementSub">Final: ${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</div>
-          <div class="placementSub">Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</div>
+          <div class="placementLabel" style="font-size:${sizes.labelSize}px;">${escapeHtml(p.etiqueta)}</div>
+          <div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</div>
+          <div class="placementSub" style="font-size:${sizes.subSize}px;">${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</div>
         `;
+
         inner.appendChild(text);
         box.appendChild(inner);
         container.appendChild(box);
@@ -1467,134 +1546,55 @@
       const root = $("printArea");
       const now = new Date();
       const dateStr = now.toLocaleString("es-MX");
-      const partsSummary = summarizeAllParts();
-      const sheetsSummary = summarizeLoadedSheets();
       const plans = state.plans || [];
 
-      root.innerHTML = `
-        <div class="print-cover">
-          <div class="print-cover-head">
-            <div>
-              <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
-            </div>
-            <div style="text-align:right">
-              <div><strong>PRODIESA OPTIMIZADOR</strong></div>
-              <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
-              <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
-              <div class="print-small">Nombre: ${escapeHtml(state.currentOptimizationName || "—")}</div>
-            </div>
-          </div>
-
-          <div class="print-section">
-            <h3>Resumen de láminas cargadas / usadas</h3>
-            <div class="tableWrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Material</th>
-                    <th>Espesor</th>
-                    <th>Lámina</th>
-                    <th>Cargadas</th>
-                    <th>Usadas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${sheetsSummary.rows.map(r => `
-                    <tr>
-                      <td>${escapeHtml(r.material)}</td>
-                      <td>${escapeHtml(String(r.espesor))} mm</td>
-                      <td>${escapeHtml(r.size)}</td>
-                      <td>${fmt(r.loaded, 0)}</td>
-                      <td>${fmt(r.used, 0)}</td>
-                    </tr>
-                  `).join("") || `<tr><td colspan="5">Sin datos</td></tr>`}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="print-section">
-            <h3>Modelos de la optimización</h3>
-            <div class="tableWrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Modelo</th>
-                    <th>Material</th>
-                    <th>Espesor</th>
-                    <th>Forma</th>
-                    <th>Final</th>
-                    <th>Corte</th>
-                    <th>Cantidad</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${partsSummary.map(r => `
-                    <tr>
-                      <td>${escapeHtml(r.etiqueta)}</td>
-                      <td>${escapeHtml(r.material)}</td>
-                      <td>${escapeHtml(String(r.espesor))} mm</td>
-                      <td>${escapeHtml(r.forma || "-")}</td>
-                      <td>${escapeHtml(r.final)}</td>
-                      <td>${escapeHtml(r.cut)}</td>
-                      <td>${fmt(r.qty, 0)}</td>
-                    </tr>
-                  `).join("") || `<tr><td colspan="7">Sin datos</td></tr>`}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          ${state.summary.unplaced.length ? `
-            <div class="print-section">
-              <h3>Piezas no colocadas</h3>
-              <div class="tableWrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Modelo</th>
-                      <th>Material</th>
-                      <th>Espesor</th>
-                      <th>Final</th>
-                      <th>Corte</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${state.summary.unplaced.map(p => `
-                      <tr>
-                        <td>${escapeHtml(p.etiqueta)}</td>
-                        <td>${escapeHtml(p.material)}</td>
-                        <td>${escapeHtml(String(p.espesor))} mm</td>
-                        <td>${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</td>
-                        <td>${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</td>
-                      </tr>
-                    `).join("")}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ` : ""}
-        </div>
-      `;
+      root.innerHTML = "";
 
       plans.forEach((plan, idx) => {
         const wrapper = document.createElement("div");
-        wrapper.className = "print-plan page-break";
+        wrapper.className = idx === 0 ? "print-plan" : "print-plan page-break";
 
         const modelSummary = summarizePlanModels(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
         wrapper.innerHTML = `
           <div class="sheetCard">
+            <div class="print-cover-head" style="margin-bottom:12px;">
+              <div>
+                <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
+              </div>
+              <div style="text-align:right">
+                <div><strong>PRODIESA OPTIMIZADOR</strong></div>
+                <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
+                <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
+                <div class="print-small">Nombre: ${escapeHtml(state.currentOptimizationName || "—")}</div>
+                <div class="print-small">Lámina / Patrón: ${idx + 1}</div>
+              </div>
+            </div>
+
             <div class="sheetTitle">
               <div>
-                <h3>Lámina / Patrón ${idx + 1}</h3>
-                <div class="sheetSub">${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm${plan.count > 1 ? ` · Repetido x ${plan.count}` : ""}</div>
+                <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm</h3>
+                <div class="sheetSub">
+                  Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm
+                  ${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}
+                </div>
               </div>
               <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
             </div>
 
-            <div class="sheetViewport">
+            <div class="miniSummary" style="margin-bottom:12px;">
+              <div class="miniBox"><div class="k">Material</div><div class="v">${escapeHtml(plan.stock.material)}</div></div>
+              <div class="miniBox"><div class="k">Espesor</div><div class="v">${escapeHtml(String(plan.stock.espesor))} mm</div></div>
+              <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
+              <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
+              <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
+              <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
+              <div class="miniBox"><div class="k">Rendimiento</div><div class="v">${fmt(plan.utilization, 1)}%</div></div>
+              <div class="miniBox"><div class="k">Repetición patrón</div><div class="v">${fmt(plan.count || 1, 0)}</div></div>
+            </div>
+
+            <div class="sheetViewport" style="margin-bottom:12px;">
               <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
             </div>
 
@@ -1641,15 +1641,33 @@
     }
 
     async function saveOptimization() {
+      console.log("saveOptimization() disparado");
+
+      const btn = $("saveOptimizationBtn");
       const name = $("optimizationName").value.trim() || "Sin nombre";
       const notes = $("optimizationNotes").value.trim();
 
       if (!state.selectedParts.length) {
         setStatus($("noticeBox"), "No puedes guardar una optimización vacía. Agrega modelos primero.", "warn");
+        setStatus($("saveStatus"), "No puedes guardar una optimización vacía.", "warn");
+        console.warn("No hay partes para guardar");
         return;
       }
 
+      btn.disabled = true;
+      btn.textContent = "Guardando...";
+      setStatus($("saveStatus"), "Guardando optimización...", "warn");
+
       try {
+        console.log("Enviando payload a /api/saveOptimization", {
+          name,
+          notes,
+          parts: state.selectedParts,
+          sheets: state.selectedSheets,
+          plans: state.plans,
+          summary: state.summary
+        });
+
         const data = await apiCall("saveOptimization", {
           name,
           notes,
@@ -1659,13 +1677,26 @@
           summary: state.summary
         });
 
+        console.log("Respuesta saveOptimization:", data);
+
         state.currentFolio = data.folio;
         state.currentOptimizationName = name;
         syncKpis();
-        closeModal("saveModalBack");
+
+        setStatus($("saveStatus"), `Optimización guardada con folio ${escapeHtml(data.folio)}.`, "ok");
         setStatus($("noticeBox"), `Optimización guardada correctamente con folio ${escapeHtml(data.folio)}.`, "ok");
+
+        setTimeout(() => {
+          closeModal("saveModalBack");
+        }, 700);
+
       } catch (err) {
+        console.error("Error al guardar optimización:", err);
+        setStatus($("saveStatus"), `No se pudo guardar. ${escapeHtml(err.message)}`, "bad");
         setStatus($("noticeBox"), `No se pudo guardar la optimización. ${escapeHtml(err.message)}`, "bad");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Guardar optimización";
       }
     }
 
