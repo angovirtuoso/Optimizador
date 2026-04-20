@@ -15,7 +15,6 @@
       --line:#dbe4ee;
       --primary:#0f172a;
       --primaryText:#ffffff;
-      --blue:#2563eb;
       --ok:#047857;
       --okBg:#ecfdf5;
       --warn:#b45309;
@@ -35,7 +34,6 @@
       --line:#243244;
       --primary:#f8fafc;
       --primaryText:#0f172a;
-      --blue:#60a5fa;
       --ok:#4ade80;
       --okBg:#052e1c;
       --warn:#fbbf24;
@@ -89,7 +87,6 @@
     }
 
     body.dark .logoBox{background:#fff}
-
     .logoBox img{
       max-width:100%;
       max-height:100%;
@@ -672,8 +669,6 @@
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "/api/apps-script";
-
     const state = {
       catalogs: {
         modelos: [],
@@ -743,18 +738,17 @@
     }
 
     async function apiCall(action, payload = {}) {
-      let res;
-      try {
-        res = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ action, payload })
-        });
-      } catch (err) {
-        throw new Error("Failed to fetch");
+      let url = "";
+      let options = {};
+
+      if (action === "getCatalogs") {
+        url = "/api/getCatalogs";
+        options = { method: "GET" };
+      } else {
+        throw new Error("Acción aún no implementada: " + action);
       }
+
+      const res = await fetch(url, options);
 
       let data;
       try {
@@ -778,7 +772,7 @@
         if (state.filters.espesor !== "Todos" && String(m.Espesor) !== String(state.filters.espesor)) return false;
         if (state.filters.forma !== "Todas" && m.Forma !== state.filters.forma) return false;
         if (!q) return true;
-        return `${m.Modelo} ${m.Cliente}`.toLowerCase().includes(q);
+        return `${m.Modelo} ${m.Cliente} ${m.Etiqueta || ""}`.toLowerCase().includes(q);
       });
     }
 
@@ -791,12 +785,19 @@
     }
 
     function renderCatalogModelDatalist() {
-      $("catalogModelList").innerHTML = currentFilteredModels().map(m => `<option value="${escapeHtml(`${m.Modelo} - ${m.Cliente}`)}"></option>`).join("");
-      const selected = currentFilteredModels().find(m => `${m.Modelo} - ${m.Cliente}` === $("catalogModelSearch").value.trim());
+      $("catalogModelList").innerHTML = currentFilteredModels()
+        .map(m => `<option value="${escapeHtml((m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim())}"></option>`)
+        .join("");
+
+      const selected = currentFilteredModels().find(m =>
+        (m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim() === $("catalogModelSearch").value.trim()
+      );
+
       if (!selected) {
         setStatus($("catalogModelPreview"), "Selecciona un modelo.");
         return;
       }
+
       setStatus($("catalogModelPreview"), `
         <div><b>Material:</b> ${escapeHtml(selected.Material)} ${escapeHtml(selected.Espesor)}</div>
         <div><b>Forma:</b> ${escapeHtml(selected.Forma)}</div>
@@ -810,9 +811,15 @@
       renderSelect("manualMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
       renderSelect("manualEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
       renderSelect("manualForma", ["Rectangular", "Óvalo", "Circular", "Trapecio rectángulo", "Esq. Red."], "", "Rectangular");
-      renderSelect("manualAcabado", state.catalogs.acabados, "Selecciona", "");
+      renderSelect("manualAcabado", state.catalogs.acabados.map(x => x.Acabado), "Selecciona", "");
       renderSelect("sheetMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
       renderSelect("sheetEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
+
+      const defaultSheet = state.catalogs.laminas.find(x => num(x.Ancho) === 2600 && num(x.Largo) === 3600) || state.catalogs.laminas[0];
+      if (defaultSheet) {
+        $("sheetAncho").value = num(defaultSheet.Ancho);
+        $("sheetLargo").value = num(defaultSheet.Largo);
+      }
     }
 
     function renderPartsTable() {
@@ -825,6 +832,7 @@
           <td><div class="actions"><button class="miniBtn" data-del-part="${p.id}">Eliminar</button></div></td>
         </tr>
       `).join("");
+
       document.querySelectorAll("[data-del-part]").forEach(btn => {
         btn.onclick = () => {
           state.selectedParts = state.selectedParts.filter(p => p.id !== btn.dataset.delPart);
@@ -844,6 +852,7 @@
           <td><div class="actions"><button class="miniBtn" data-del-sheet="${s.id}">Eliminar</button></div></td>
         </tr>
       `).join("");
+
       document.querySelectorAll("[data-del-sheet]").forEach(btn => {
         btn.onclick = () => {
           state.selectedSheets = state.selectedSheets.filter(s => s.id !== btn.dataset.delSheet);
@@ -861,6 +870,7 @@
 
       try {
         const data = await apiCall("getCatalogs");
+
         state.catalogs.modelos = data.catalogs.modelos || [];
         state.catalogs.materiales = data.catalogs.materiales || [];
         state.catalogs.espesores = data.catalogs.espesores || [];
@@ -877,13 +887,7 @@
       } catch (err) {
         state.connectionOk = false;
         const msg = String(err && err.message ? err.message : err);
-        let friendly = "No se pudo conectar con el servicio.";
-        if (msg.toLowerCase().includes("failed to fetch")) {
-          friendly = "No se pudo conectar con el servicio. Revisa el proxy en /api/apps-script y vuelve a probar.";
-        } else if (msg.toLowerCase().includes("respuesta inválida")) {
-          friendly = "El servicio respondió con un formato inválido. Revisa el proxy de Vercel.";
-        }
-        setStatus($("apiStatus"), friendly, "bad");
+        setStatus($("apiStatus"), `No se pudo cargar el catálogo. ${escapeHtml(msg)}`, "bad");
         setConnectionBadge("bad", "Sin conexión");
       }
 
@@ -891,82 +895,28 @@
     }
 
     function addCatalogModel() {
-      const match = state.catalogs.modelos.find(m => `${m.Modelo} - ${m.Cliente}` === $("catalogModelSearch").value.trim());
-      if (!match) {
+      const selected = currentFilteredModels().find(m =>
+        (m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim() === $("catalogModelSearch").value.trim()
+      );
+
+      if (!selected) {
         setStatus($("apiStatus"), "Selecciona un modelo válido del catálogo.", "warn");
         return;
       }
+
       state.selectedParts.push({
         id: uid(),
-        etiqueta: `${match.Modelo} - ${match.Cliente}`,
-        material: match.Material,
-        espesor: String(match.Espesor),
-        anchoCorte: num(match.Ancho_Corte),
-        largoCorte: num(match.Largo_Corte),
+        etiqueta: (selected.Etiqueta || `${selected.Modelo} - ${selected.Cliente}`).trim(),
+        material: selected.Material,
+        espesor: String(selected.Espesor),
+        anchoCorte: num(selected.Ancho_Corte),
+        largoCorte: num(selected.Largo_Corte),
         cantidad: Math.max(1, Math.round(num($("catalogModelQty").value || 1)))
       });
+
       renderPartsTable();
       syncKpis();
       setStatus($("apiStatus"), "Modelo agregado a la optimización actual.", "ok");
-    }
-
-    async function addManualModel() {
-      const payload = {
-        Cliente: $("manualCliente").value.trim(),
-        Modelo: $("manualModelo").value.trim(),
-        Material: $("manualMaterial").value,
-        Espesor: $("manualEspesor").value,
-        Forma: $("manualForma").value,
-        Acabado: $("manualAcabado").value,
-        Ancho_Final: num($("manualAnchoFinal").value),
-        Largo_Final: num($("manualLargoFinal").value),
-        Tolerancia_Final: 0,
-        Desbaste: 0,
-        Ancho_Corte: num($("manualAnchoCorte").value) || num($("manualAnchoFinal").value),
-        Largo_Corte: num($("manualLargoCorte").value) || num($("manualLargoFinal").value),
-        Trim_Especial: num($("manualTrimEspecial").value || 0),
-        Origen: "Manual app",
-        Notas: $("manualNotas").value.trim(),
-        Cantidad: Math.max(1, Math.round(num($("manualQty").value || 1)))
-      };
-
-      if (!payload.Cliente || !payload.Modelo || !payload.Material || !payload.Espesor || !(payload.Ancho_Final > 0) || !(payload.Largo_Final > 0)) {
-        setStatus($("apiStatus"), "Completa Cliente, Modelo, Material, Espesor y medidas finales válidas.", "warn");
-        return;
-      }
-
-      try {
-        await apiCall("addManualModel", payload);
-        state.selectedParts.push({
-          id: uid(),
-          etiqueta: `${payload.Modelo} - ${payload.Cliente}`,
-          material: payload.Material,
-          espesor: String(payload.Espesor),
-          anchoCorte: payload.Ancho_Corte,
-          largoCorte: payload.Largo_Corte,
-          cantidad: payload.Cantidad
-        });
-        renderPartsTable();
-        syncKpis();
-        setStatus($("apiStatus"), "Modelo manual guardado en Sheets y agregado al optimizador.", "ok");
-        closeModal("manualModalBack");
-        resetManualForm();
-        await refreshCatalogs();
-      } catch (err) {
-        setStatus($("apiStatus"), escapeHtml(err.message), "bad");
-      }
-    }
-
-    function resetManualForm() {
-      $("manualCliente").value = "";
-      $("manualModelo").value = "";
-      $("manualAnchoFinal").value = "";
-      $("manualLargoFinal").value = "";
-      $("manualAnchoCorte").value = "";
-      $("manualLargoCorte").value = "";
-      $("manualTrimEspecial").value = "0";
-      $("manualQty").value = "1";
-      $("manualNotas").value = "";
     }
 
     function addSheet() {
@@ -978,68 +928,20 @@
         largo: num($("sheetLargo").value),
         cantidad: Math.max(1, Math.round(num($("sheetQty").value || 1)))
       };
+
       if (!rec.material || !rec.espesor || !(rec.ancho > 0) || !(rec.largo > 0)) {
         setStatus($("apiStatus"), "Completa material, espesor y dimensiones válidas para la lámina.", "warn");
         return;
       }
+
       state.selectedSheets.push(rec);
       renderSheetsTable();
       syncKpis();
       setStatus($("apiStatus"), "Lámina agregada a la optimización actual.", "ok");
     }
 
-    async function saveOptimization() {
-      if (!state.selectedParts.length) {
-        setStatus($("persistenceStatus"), "Agrega al menos un modelo antes de guardar.", "warn");
-        return;
-      }
-      if (!state.selectedSheets.length) {
-        setStatus($("persistenceStatus"), "Agrega al menos una lámina antes de guardar.", "warn");
-        return;
-      }
-
-      const name = $("optimizationName").value.trim() || "Sin nombre";
-      const notes = $("optimizationNotes").value.trim();
-
-      try {
-        const data = await apiCall("saveOptimization", {
-          name,
-          notes,
-          parts: state.selectedParts,
-          sheets: state.selectedSheets,
-          metadata: { createdAtClient: new Date().toISOString() }
-        });
-        state.currentFolio = data.folio;
-        state.currentOptimizationName = name;
-        syncKpis();
-        setStatus($("persistenceStatus"), `Optimización guardada correctamente con folio <b>${escapeHtml(data.folio)}</b>.`, "ok");
-        closeModal("saveModalBack");
-      } catch (err) {
-        setStatus($("persistenceStatus"), escapeHtml(err.message), "bad");
-      }
-    }
-
-    async function loadOptimizationByFolio() {
-      const folio = $("folioToLoad").value.trim();
-      if (!folio) {
-        setStatus($("loadStatus"), "Escribe un folio válido.", "warn");
-        return;
-      }
-      try {
-        const data = await apiCall("loadOptimization", { folio });
-        state.currentFolio = data.optimization.folio;
-        state.currentOptimizationName = data.optimization.name || "Sin nombre";
-        state.selectedParts = data.optimization.parts || [];
-        state.selectedSheets = data.optimization.sheets || [];
-        renderPartsTable();
-        renderSheetsTable();
-        syncKpis();
-        setStatus($("persistenceStatus"), `Optimización cargada correctamente desde folio <b>${escapeHtml(folio)}</b>.`, "ok");
-        setStatus($("loadStatus"), `Cargada: <b>${escapeHtml(data.optimization.name || "Sin nombre")}</b>`, "ok");
-        closeModal("loadModalBack");
-      } catch (err) {
-        setStatus($("loadStatus"), escapeHtml(err.message), "bad");
-      }
+    function notImplemented(actionName) {
+      setStatus($("persistenceStatus"), `${actionName} todavía no está conectado al backend nuevo. Primero validemos lectura de catálogos.`, "warn");
     }
 
     function openModal(id) { $(id).classList.add("show"); }
@@ -1061,15 +963,15 @@
 
       $("openManualModalBtn").addEventListener("click", () => openModal("manualModalBack"));
       $("closeManualModalBtn").addEventListener("click", () => closeModal("manualModalBack"));
-      $("addManualModelBtn").addEventListener("click", addManualModel);
+      $("addManualModelBtn").addEventListener("click", () => notImplemented("Guardar modelo manual"));
 
       $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
-      $("saveOptimizationBtn").addEventListener("click", saveOptimization);
+      $("saveOptimizationBtn").addEventListener("click", () => notImplemented("Guardar optimización"));
 
       $("openLoadModalBtn").addEventListener("click", () => openModal("loadModalBack"));
       $("closeLoadModalBtn").addEventListener("click", () => closeModal("loadModalBack"));
-      $("loadByFolioBtn").addEventListener("click", loadOptimizationByFolio);
+      $("loadByFolioBtn").addEventListener("click", () => notImplemented("Cargar optimización"));
 
       ["manualModalBack","saveModalBack","loadModalBack"].forEach(id => {
         $(id).addEventListener("click", e => {
