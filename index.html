@@ -222,15 +222,24 @@
 
     .print-only{display:none}
     .page-break{break-before:page; page-break-before:always}
-    @page{size:auto; margin:12mm}
 
     @media print {
-      body{
+      @page{
+        size: letter portrait;
+        margin: 8mm;
+      }
+
+      html, body{
         background:#fff !important;
         color:#000 !important;
-        font-size:11px;
+        font-size:10px !important;
       }
-      .app{max-width:none;padding:0}
+
+      .app{
+        max-width:none;
+        padding:0;
+      }
+
       .topbar,
       .grid > .stack:first-child,
       .tabs,
@@ -245,72 +254,170 @@
       #openSaveModalBtn{
         display:none !important;
       }
-      .grid{display:block !important}
-      .stack{display:block !important}
+
+      .grid,
+      .stack{
+        display:block !important;
+      }
+
       .card,.kpi,.sheetCard,.summaryCard,.tableWrap,.sheetViewport,.miniBox{
         box-shadow:none !important;
         background:#fff !important;
         color:#000 !important;
         border-color:#999 !important;
       }
+
       .kpis{
-        grid-template-columns:repeat(5,1fr) !important;
-        margin-bottom:10px;
+        display:none !important;
       }
-      .placement{
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      .sheetCanvas{
-        background:#fff !important;
-        border:1px solid #999 !important;
-        min-height:680px !important;
-      }
+
       #resultArea{
         border:none !important;
         padding:0 !important;
         background:#fff !important;
       }
-      .print-only{display:block !important}
-      .print-cover-head{
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        align-items:center;
-        margin-bottom:10px;
+
+      .print-only{
+        display:block !important;
       }
-      .print-logo{
-        width:120px;
-        height:44px;
-        object-fit:contain;
-      }
-      .print-section{margin-top:10px}
-      .print-section h3{
-        margin:0 0 8px 0;
-        font-size:14px;
-      }
-      .print-small{
-        font-size:11px;
-        color:#333;
-      }
+
       .print-plan{
         break-inside:avoid;
         page-break-inside:avoid;
         break-after:page;
         page-break-after:always;
-        margin-top:0;
+        margin:0;
+        padding:0;
       }
+
       .print-plan:last-child{
         break-after:auto;
         page-break-after:auto;
       }
-      .print-plan .sheetCanvas{
-        max-width:720px;
-        margin:0;
+
+      .print-plan .sheetCard{
+        padding:10px !important;
+        border:1px solid #999 !important;
+        border-radius:10px !important;
       }
-      .resultLayout{display:block !important}
-      .summaryCard{margin-top:10px}
-      .pill{border:1px solid #999}
+
+      .print-cover-head{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:8px;
+        margin-bottom:8px;
+      }
+
+      .print-logo{
+        width:105px;
+        height:36px;
+        object-fit:contain;
+      }
+
+      .print-small{
+        font-size:10px;
+        color:#333;
+        line-height:1.25;
+      }
+
+      .sheetTitle{
+        margin-bottom:6px !important;
+      }
+
+      .sheetTitle h3{
+        font-size:16px !important;
+        margin:0 !important;
+      }
+
+      .sheetSub{
+        font-size:10px !important;
+      }
+
+      .pill{
+        font-size:10px !important;
+        padding:6px 10px !important;
+        border:1px solid #999 !important;
+      }
+
+      .miniSummary{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:6px !important;
+        margin-bottom:8px !important;
+      }
+
+      .miniBox{
+        padding:6px !important;
+        border-radius:8px !important;
+      }
+
+      .miniBox .k{
+        font-size:9px !important;
+      }
+
+      .miniBox .v{
+        font-size:13px !important;
+        margin-top:2px !important;
+      }
+
+      .sheetViewport{
+        padding:6px !important;
+        margin-bottom:8px !important;
+        border-radius:10px !important;
+      }
+
+      .sheetCanvas{
+        width:100% !important;
+        max-width:520px !important;
+        aspect-ratio:0.72 !important;
+        min-height:auto !important;
+        height:auto !important;
+        margin:0 auto !important;
+        background:#fff !important;
+        border:1px solid #999 !important;
+        border-radius:10px !important;
+      }
+
+      .resultLayout{
+        display:block !important;
+      }
+
+      .summaryCard{
+        margin-top:8px !important;
+        padding:8px !important;
+        border-radius:10px !important;
+      }
+
+      .summaryCard table{
+        table-layout:fixed;
+        width:100%;
+      }
+
+      .summaryCard th,
+      .summaryCard td{
+        padding:5px 6px !important;
+        font-size:9px !important;
+        word-break:break-word;
+      }
+
+      .print-section{
+        margin-top:8px !important;
+      }
+
+      .print-section h3{
+        margin:0 0 6px 0 !important;
+        font-size:11px !important;
+      }
+
+      .placement{
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .placementLabel{
+        font-weight:700 !important;
+      }
     }
 
     @media (max-width:1280px){
@@ -1514,14 +1621,14 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
       plans.forEach((plan, idx) => {
         const wrapper = document.createElement("div");
-        wrapper.className = idx === 0 ? "print-plan" : "print-plan page-break";
+        wrapper.className = "print-plan";
 
         const modelSummary = summarizePlanModels(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
         wrapper.innerHTML = `
           <div class="sheetCard">
-            <div class="print-cover-head" style="margin-bottom:12px;">
+            <div class="print-cover-head">
               <div>
                 <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
               </div>
@@ -1545,18 +1652,14 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
               <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
             </div>
 
-            <div class="miniSummary" style="margin-bottom:12px;">
-              <div class="miniBox"><div class="k">Material</div><div class="v">${escapeHtml(plan.stock.material)}</div></div>
-              <div class="miniBox"><div class="k">Espesor</div><div class="v">${escapeHtml(String(plan.stock.espesor))} mm</div></div>
+            <div class="miniSummary">
               <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
               <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
               <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
               <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
-              <div class="miniBox"><div class="k">Rendimiento</div><div class="v">${fmt(plan.utilization, 1)}%</div></div>
-              <div class="miniBox"><div class="k">Repetición patrón</div><div class="v">${fmt(plan.count || 1, 0)}</div></div>
             </div>
 
-            <div class="sheetViewport" style="margin-bottom:12px;">
+            <div class="sheetViewport">
               <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
             </div>
 
@@ -1566,10 +1669,10 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                 <table>
                   <thead>
                     <tr>
-                      <th>Modelo</th>
-                      <th>Cantidad en patrón</th>
-                      <th>Medida final</th>
-                      <th>Medida corte</th>
+                      <th style="width:44%">Modelo</th>
+                      <th style="width:12%">Cant.</th>
+                      <th style="width:22%">Medida final</th>
+                      <th style="width:22%">Medida corte</th>
                     </tr>
                   </thead>
                   <tbody>
