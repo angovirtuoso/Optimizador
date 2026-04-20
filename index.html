@@ -221,215 +221,6 @@
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
     .print-only{display:none}
-    .print-fit-card{transform-origin:top left;width:100%}
-
-    @media print {
-      @page{
-        size: letter portrait;
-        margin: 5mm;
-      }
-
-      html, body{
-        margin:0 !important;
-        padding:0 !important;
-        background:#fff !important;
-        color:#000 !important;
-        font-size:10px !important;
-      }
-
-      body{
-        overflow:visible !important;
-      }
-
-      .app{
-        display:none !important;
-      }
-
-      #printArea{
-        display:block !important;
-        visibility:visible !important;
-        position:static !important;
-        width:100% !important;
-        margin:0 !important;
-        padding:0 !important;
-        background:#fff !important;
-      }
-
-      #printArea *{
-        visibility:visible !important;
-      }
-
-      .print-only{
-        display:block !important;
-      }
-
-      .print-plan{
-        width:100% !important;
-        overflow:hidden !important;
-        break-after:page;
-        page-break-after:always;
-        margin:0 !important;
-        padding:0 !important;
-      }
-
-      .print-plan:last-child{
-        break-after:auto;
-        page-break-after:auto;
-      }
-
-      #printArea .sheetCard,
-      #printArea .summaryCard,
-      #printArea .miniBox,
-      #printArea .tableWrap,
-      #printArea .sheetViewport{
-        box-shadow:none !important;
-        background:#fff !important;
-        color:#000 !important;
-        border-color:#999 !important;
-      }
-
-      #printArea .sheetCard{
-        padding:6px !important;
-        border:1px solid #999 !important;
-        border-radius:8px !important;
-      }
-
-      .print-cover-head{
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:6px;
-        margin-bottom:6px;
-      }
-
-      .print-logo{
-        width:92px;
-        height:30px;
-        object-fit:contain;
-      }
-
-      .print-small{
-        font-size:9px;
-        color:#333;
-        line-height:1.15;
-      }
-
-      .sheetTitle{
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:8px;
-        margin-bottom:4px !important;
-      }
-
-      .sheetTitle h3{
-        font-size:14px !important;
-        margin:0 !important;
-        line-height:1.05 !important;
-      }
-
-      .sheetSub{
-        font-size:9px !important;
-        line-height:1.1 !important;
-      }
-
-      .pill{
-        font-size:9px !important;
-        padding:4px 8px !important;
-        border:1px solid #999 !important;
-        border-radius:999px !important;
-      }
-
-      .miniSummary{
-        display:grid !important;
-        grid-template-columns:repeat(4,1fr) !important;
-        gap:4px !important;
-        margin-bottom:6px !important;
-      }
-
-      .miniBox{
-        padding:5px !important;
-        border-radius:8px !important;
-      }
-
-      .miniBox .k{
-        font-size:8px !important;
-        line-height:1 !important;
-      }
-
-      .miniBox .v{
-        font-size:11px !important;
-        margin-top:2px !important;
-        line-height:1.05 !important;
-      }
-
-      .sheetViewport{
-        padding:4px !important;
-        margin-bottom:6px !important;
-        border-radius:8px !important;
-      }
-
-      .sheetCanvas{
-        width:100% !important;
-        max-width:390px !important;
-        aspect-ratio:0.72 !important;
-        min-height:auto !important;
-        height:auto !important;
-        margin:0 auto !important;
-        background:#fff !important;
-        border:1px solid #999 !important;
-        border-radius:8px !important;
-        overflow:hidden !important;
-      }
-
-      .summaryCard{
-        margin-top:6px !important;
-        padding:6px !important;
-        border-radius:8px !important;
-      }
-
-      .print-section{
-        margin-top:6px !important;
-      }
-
-      .print-section h3{
-        margin:0 0 4px 0 !important;
-        font-size:10px !important;
-        line-height:1.05 !important;
-      }
-
-      .summaryCard table{
-        table-layout:fixed;
-        width:100%;
-        border-collapse:collapse !important;
-      }
-
-      .summaryCard th,
-      .summaryCard td{
-        padding:4px 5px !important;
-        font-size:8px !important;
-        line-height:1.05 !important;
-        word-break:break-word;
-        border-color:#bbb !important;
-      }
-
-      .summaryCard th{
-        background:#f5f5f5 !important;
-      }
-
-      .placement{
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .placementLabel{
-        font-weight:700 !important;
-      }
-
-      .placementSub{
-        font-weight:400 !important;
-      }
-    }
 
     @media (max-width:1280px){
       .grid{grid-template-columns:1fr}
@@ -598,8 +389,6 @@
       </div>
     </div>
   </div>
-
-  <div id="printArea" class="print-only"></div>
 
   <div id="manualModalBack" class="modalBack">
     <div class="modal">
@@ -1616,61 +1405,79 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
       syncKpis();
     }
 
-    function getPrintablePageHeightPx() {
-      const mmToPx = 96 / 25.4;
-      const pageHeightMm = 279.4;
-      const marginTopBottomMm = 10;
-      return (pageHeightMm - marginTopBottomMm) * mmToPx;
+    function renderPlanSvg(plan) {
+      const W = 390;
+      const H = Math.round(W / 0.72);
+
+      const colors = [
+        ["#dbeafe","#93c5fd"],
+        ["#dcfce7","#86efac"],
+        ["#fef3c7","#fcd34d"],
+        ["#ede9fe","#c4b5fd"],
+        ["#ffe4e6","#fda4af"],
+        ["#cffafe","#67e8f9"]
+      ];
+
+      const items = (plan.placements || []).map((p, idx) => {
+        const c = colors[idx % colors.length];
+        const x = (num(p.x) / num(plan.stock.ancho)) * W;
+        const y = (num(p.y) / num(plan.stock.largo)) * H;
+        const w = (num(p.w) / num(plan.stock.ancho)) * W;
+        const h = (num(p.h) / num(plan.stock.largo)) * H;
+
+        const label = escapeHtml(String(p.etiqueta || ""));
+        const finalTxt = `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`;
+        const cutTxt = `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
+
+        const fontMain = Math.max(3.5, Math.min(9, Math.min(w, h) / 7));
+        const fontSub = Math.max(3.2, fontMain * 0.88);
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+
+        const rotate = h > w ? `transform="rotate(-90 ${cx} ${cy})"` : "";
+
+        return `
+          <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" ry="3"
+            fill="${c[0]}" stroke="${c[1]}" stroke-width="1"/>
+          <g ${rotate}>
+            <text x="${cx}" y="${cy - fontMain}" text-anchor="middle"
+              font-size="${fontMain}" font-weight="700" fill="#0f172a">${label}</text>
+            <text x="${cx}" y="${cy + 1}" text-anchor="middle"
+              font-size="${fontSub}" fill="#0f172a">${escapeHtml(finalTxt)}</text>
+            <text x="${cx}" y="${cy + fontSub + 3}" text-anchor="middle"
+              font-size="${fontSub}" fill="#0f172a">${escapeHtml(cutTxt)}</text>
+          </g>
+        `;
+      }).join("");
+
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+          <rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff" stroke="#999999" stroke-width="1"/>
+          <text x="8" y="14" font-size="9" fill="#64748b">
+            ${escapeHtml(`${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm`)}
+          </text>
+          ${items}
+        </svg>
+      `;
     }
 
-    function fitPrintPagesToOneSheet() {
-      const pageHeightPx = getPrintablePageHeightPx();
-      const plans = document.querySelectorAll("#printArea .print-plan");
-
-      plans.forEach(plan => {
-        const card = plan.querySelector(".print-fit-card");
-        if (!card) return;
-
-        card.style.transform = "scale(1)";
-        card.style.transformOrigin = "top left";
-        plan.style.height = "auto";
-        plan.style.width = "100%";
-
-        const naturalHeight = card.scrollHeight;
-        const naturalWidth = card.scrollWidth;
-        const scale = Math.min(1, pageHeightPx / naturalHeight);
-
-        card.style.transform = `scale(${scale})`;
-        card.style.transformOrigin = "top left";
-
-        plan.style.height = `${naturalHeight * scale}px`;
-        plan.style.width = `${Math.max(naturalWidth * scale, 1)}px`;
-      });
-    }
-
-    function buildPrintArea() {
-      const root = $("printArea");
+    function buildPrintableHtml() {
       const now = new Date();
       const dateStr = now.toLocaleString("es-MX");
       const plans = state.plans || [];
 
-      root.innerHTML = "";
-
-      plans.forEach((plan, idx) => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "print-plan";
-
+      const pagesHtml = plans.map((plan, idx) => {
         const modelSummary = summarizePlanModels(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
-        wrapper.innerHTML = `
-          <div class="print-fit-card">
+        return `
+          <section class="print-page">
             <div class="sheetCard">
               <div class="print-cover-head">
                 <div>
-                  <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
+                  <img class="print-logo" src="${location.origin}/prodiesa-logo.png" alt="Prodiesa" />
                 </div>
-                <div style="text-align:right">
+                <div class="rightHead">
                   <div><strong>PRODIESA OPTIMIZADOR</strong></div>
                   <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
                   <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
@@ -1698,45 +1505,191 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
               </div>
 
               <div class="sheetViewport">
-                <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
+                <div class="sheetCanvas">
+                  ${renderPlanSvg(plan)}
+                </div>
               </div>
 
               <div class="print-section">
                 <h3>Desglose de modelos en esta lámina</h3>
-                <div class="tableWrap">
-                  <table>
-                    <thead>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:44%">Modelo</th>
+                      <th style="width:12%">Cant.</th>
+                      <th style="width:22%">Medida final</th>
+                      <th style="width:22%">Medida corte</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${modelSummary.map(r => `
                       <tr>
-                        <th style="width:44%">Modelo</th>
-                        <th style="width:12%">Cant.</th>
-                        <th style="width:22%">Medida final</th>
-                        <th style="width:22%">Medida corte</th>
+                        <td>${escapeHtml(r.etiqueta)}</td>
+                        <td>${fmt(r.qty, 0)}</td>
+                        <td>${escapeHtml(r.final)}</td>
+                        <td>${escapeHtml(r.cut)}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      ${modelSummary.map(r => `
-                        <tr>
-                          <td>${escapeHtml(r.etiqueta)}</td>
-                          <td>${fmt(r.qty, 0)}</td>
-                          <td>${escapeHtml(r.final)}</td>
-                          <td>${escapeHtml(r.cut)}</td>
-                        </tr>
-                      `).join("")}
-                    </tbody>
-                  </table>
-                </div>
+                    `).join("")}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
+          </section>
         `;
+      }).join("");
 
-        root.appendChild(wrapper);
-        drawSheet(plan, root.querySelector(`#printSheetCanvas_${idx}`));
-      });
+      return `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <title>PRODIESA OPTIMIZADOR PDF</title>
+          <style>
+            @page { size: letter portrait; margin: 5mm; }
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              color: #000;
+              font-family: Inter, Arial, sans-serif;
+              font-size: 10px;
+            }
+            body { padding: 0; }
+            .print-page {
+              width: 100%;
+              page-break-after: always;
+              break-after: page;
+              overflow: hidden;
+            }
+            .print-page:last-child {
+              page-break-after: auto;
+              break-after: auto;
+            }
+            .sheetCard {
+              border: 1px solid #999;
+              border-radius: 8px;
+              padding: 6px;
+            }
+            .print-cover-head {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              gap: 6px;
+              margin-bottom: 6px;
+            }
+            .rightHead { text-align: right; }
+            .print-logo {
+              width: 92px;
+              height: 30px;
+              object-fit: contain;
+            }
+            .print-small {
+              font-size: 9px;
+              color: #333;
+              line-height: 1.15;
+            }
+            .sheetTitle {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              gap: 8px;
+              margin-bottom: 4px;
+            }
+            .sheetTitle h3 {
+              margin: 0;
+              font-size: 14px;
+              line-height: 1.05;
+            }
+            .sheetSub {
+              font-size: 9px;
+              line-height: 1.1;
+              color: #555;
+            }
+            .pill {
+              font-size: 9px;
+              padding: 4px 8px;
+              border: 1px solid #999;
+              border-radius: 999px;
+              white-space: nowrap;
+            }
+            .pill.red { background: #fee2e2; color: #b91c1c; }
+            .pill.yellow { background: #fef3c7; color: #a16207; }
+            .pill.green { background: #dcfce7; color: #15803d; }
 
-      requestAnimationFrame(() => {
-        fitPrintPagesToOneSheet();
-      });
+            .miniSummary {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 4px;
+              margin-bottom: 6px;
+            }
+            .miniBox {
+              border: 1px solid #999;
+              border-radius: 8px;
+              padding: 5px;
+              text-align: center;
+              background: #fff;
+            }
+            .miniBox .k {
+              font-size: 8px;
+              line-height: 1;
+              color: #555;
+            }
+            .miniBox .v {
+              font-size: 11px;
+              margin-top: 2px;
+              line-height: 1.05;
+              font-weight: 700;
+            }
+
+            .sheetViewport {
+              border: 1px solid #999;
+              border-radius: 8px;
+              padding: 4px;
+              margin-bottom: 6px;
+            }
+            .sheetCanvas {
+              width: 390px;
+              max-width: 100%;
+              margin: 0 auto;
+            }
+
+            .print-section h3 {
+              margin: 0 0 4px 0;
+              font-size: 10px;
+              line-height: 1.05;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+            }
+            th, td {
+              border: 1px solid #bbb;
+              padding: 4px 5px;
+              font-size: 8px;
+              line-height: 1.05;
+              word-break: break-word;
+              text-align: left;
+              vertical-align: top;
+            }
+            th {
+              background: #f5f5f5;
+            }
+          </style>
+        </head>
+        <body>
+          ${pagesHtml}
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 300);
+            };
+          <\/script>
+        </body>
+        </html>
+      `;
     }
 
     function doPrint() {
@@ -1745,15 +1698,17 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         return;
       }
 
-      buildPrintArea();
+      const html = buildPrintableHtml();
+      const win = window.open("", "_blank", "width=900,height=1200");
 
-      requestAnimationFrame(() => {
-        fitPrintPagesToOneSheet();
+      if (!win) {
+        setStatus($("noticeBox"), "El navegador bloqueó la ventana de impresión. Permite popups para esta página.", "bad");
+        return;
+      }
 
-        setTimeout(() => {
-          window.print();
-        }, 300);
-      });
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
     }
 
     async function saveOptimization() {
