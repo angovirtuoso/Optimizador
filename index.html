@@ -22,7 +22,6 @@
       --bad:#b91c1c;
       --badBg:#fef2f2;
       --shadow:0 12px 26px rgba(15,23,42,.08);
-
       --fs-xs:12px;
       --fs-sm:13px;
       --fs-md:14px;
@@ -201,6 +200,116 @@
     }
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
+    /* PRINT */
+    .print-only{display:none}
+    .page-break{break-before:page; page-break-before:always}
+    @page{size:auto; margin:12mm}
+
+    @media print {
+      body{
+        background:#fff !important;
+        color:#000 !important;
+        font-size:11px;
+      }
+      .app{
+        max-width:none;
+        padding:0;
+      }
+      .topbar,
+      .grid > .stack:first-child,
+      .tabs,
+      .modalBack,
+      .chip,
+      #noticeBox,
+      .switchWrap,
+      #refreshBtn,
+      #optimizeBtn,
+      #openLoadModalBtn,
+      #openSaveModalBtn{
+        display:none !important;
+      }
+      .grid{
+        display:block !important;
+      }
+      .stack{
+        display:block !important;
+      }
+      .card,.kpi,.sheetCard,.summaryCard,.tableWrap,.sheetViewport,.miniBox{
+        box-shadow:none !important;
+        background:#fff !important;
+        color:#000 !important;
+        border-color:#999 !important;
+      }
+      .kpis{
+        grid-template-columns:repeat(5,1fr) !important;
+        margin-bottom:10px;
+      }
+      .placement{
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .sheetCanvas{
+        background:#fff !important;
+        border:1px solid #999 !important;
+        min-height:680px !important;
+      }
+      #resultArea{
+        border:none !important;
+        padding:0 !important;
+        background:#fff !important;
+      }
+      .print-only{
+        display:block !important;
+      }
+      .print-cover{
+        margin-bottom:12px;
+        border:1px solid #999;
+        border-radius:14px;
+        padding:12px;
+      }
+      .print-cover-head{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:center;
+        margin-bottom:10px;
+      }
+      .print-logo{
+        width:120px;
+        height:44px;
+        object-fit:contain;
+      }
+      .print-section{
+        margin-top:10px;
+      }
+      .print-section h3{
+        margin:0 0 8px 0;
+        font-size:14px;
+      }
+      .print-small{
+        font-size:11px;
+        color:#333;
+      }
+      .print-plan{
+        break-inside:avoid;
+        page-break-inside:avoid;
+        margin-top:18px;
+      }
+      .print-plan .sheetCanvas{
+        max-width:720px;
+        margin:0;
+      }
+      .resultLayout{
+        display:block !important;
+      }
+      .summaryCard{
+        margin-top:10px;
+      }
+      .pill{
+        border:1px solid #999;
+      }
+    }
+
     @media (max-width:1280px){
       .grid{grid-template-columns:1fr}
       .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr 1fr}
@@ -241,9 +350,20 @@
 
         <button id="refreshBtn">Actualizar catálogos</button>
         <button id="optimizeBtn" class="primary">Optimizar</button>
+        <button id="printBtn">Imprimir / PDF</button>
         <button id="openLoadModalBtn">Cargar optimización</button>
         <button id="openSaveModalBtn" class="warn">Guardar optimización</button>
       </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="sectionHead" style="margin-bottom:10px;">
+        <div>
+          <h2>Avisos / Estatus</h2>
+          <div class="subtle">Compatibilidad, faltantes y observaciones del plan</div>
+        </div>
+      </div>
+      <div id="noticeBox" class="status">Aún no hay avisos.</div>
     </div>
 
     <div class="grid">
@@ -337,16 +457,6 @@
             </table>
           </div>
         </div>
-
-        <div class="card">
-          <div class="sectionHead">
-            <div>
-              <h2>Avisos / Estatus</h2>
-              <div class="subtle">Compatibilidad, faltantes y observaciones</div>
-            </div>
-          </div>
-          <div id="noticeBox" class="status">Aún no hay avisos.</div>
-        </div>
       </div>
 
       <div class="stack">
@@ -372,6 +482,8 @@
         </div>
       </div>
     </div>
+
+    <div id="printArea" class="print-only"></div>
   </div>
 
   <div id="manualModalBack" class="modalBack">
@@ -594,7 +706,10 @@
       renderSelect("sheetMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
       renderSelect("sheetEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
 
-      const defaultSheet = state.catalogs.laminas.find(x => num(x.Ancho) === 2600 && num(x.Largo) === 3600) || state.catalogs.laminas[0];
+      const defaultSheet =
+        state.catalogs.laminas.find(x => num(x.Ancho) === 2600 && num(x.Largo) === 3600) ||
+        state.catalogs.laminas[0];
+
       if (defaultSheet) {
         $("sheetAncho").value = num(defaultSheet.Ancho);
         $("sheetLargo").value = num(defaultSheet.Largo);
@@ -1025,7 +1140,7 @@
             <div class="sheetTitle">
               <div>
                 <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(plan.stock.espesor)}mm</h3>
-                <div class="sheetSub">Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm</div>
+                <div class="sheetSub">Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}</div>
               </div>
               <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
             </div>
@@ -1141,17 +1256,9 @@
     function updateNotices() {
       const notices = [];
 
-      if (!state.connectionOk) {
-        notices.push("No hay conexión válida con el catálogo. Revisa /api/getCatalogs.");
-      }
-
-      if (!state.selectedParts.length) {
-        notices.push("Aún no has agregado modelos para optimizar.");
-      }
-
-      if (!state.selectedSheets.length) {
-        notices.push("Aún no has agregado láminas para optimizar.");
-      }
+      if (!state.connectionOk) notices.push("No hay conexión válida con el catálogo. Revisa /api/getCatalogs.");
+      if (!state.selectedParts.length) notices.push("Aún no has agregado modelos para optimizar.");
+      if (!state.selectedSheets.length) notices.push("Aún no has agregado láminas para optimizar.");
 
       const expandedParts = expandParts();
 
@@ -1159,11 +1266,7 @@
         const partGroups = {};
         expandedParts.forEach(p => {
           const key = `${p.material}__${p.espesor}`;
-          partGroups[key] = partGroups[key] || {
-            material: p.material,
-            espesor: p.espesor,
-            parts: []
-          };
+          partGroups[key] = partGroups[key] || { material: p.material, espesor: p.espesor, parts: [] };
           partGroups[key].parts.push(p);
         });
 
@@ -1196,7 +1299,6 @@
                 `No es posible optimizar ${group.material} ${group.espesor}mm con las láminas actualmente cargadas. Para esta carga se requieren ${required} lámina(s) de referencia ${fmt(refStock.ancho)} × ${fmt(refStock.largo)} mm del mismo material y espesor.`
               );
             }
-
             return;
           }
 
@@ -1238,17 +1340,244 @@
         notices.push(`Hay ${state.summary.unplaced.length} pieza(s) sin colocar después de optimizar.`);
       }
 
-      if (!notices.length) {
-        setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
-      } else {
-        setStatus($("noticeBox"), notices.map(n => `• ${escapeHtml(n)}`).join("<br>"), "warn");
-      }
+      if (!notices.length) setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
+      else setStatus($("noticeBox"), notices.map(n => `• ${escapeHtml(n)}`).join("<br>"), "warn");
 
       syncKpis();
     }
 
     function notImplemented(actionName) {
       setStatus($("noticeBox"), `${actionName} todavía no está conectado al backend nuevo.`, "warn");
+    }
+
+    function buildPrintArea() {
+      const root = $("printArea");
+      const now = new Date();
+      const dateStr = now.toLocaleString("es-MX");
+      const partsSummary = summarizeAllParts();
+      const sheetsSummary = summarizeLoadedSheets();
+      const plans = state.plans || [];
+
+      root.innerHTML = `
+        <div class="print-cover">
+          <div class="print-cover-head">
+            <div>
+              <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
+            </div>
+            <div style="text-align:right">
+              <div><strong>PRODIESA OPTIMIZADOR</strong></div>
+              <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
+              <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
+              <div class="print-small">Nombre: ${escapeHtml(state.currentOptimizationName || "—")}</div>
+            </div>
+          </div>
+
+          <div class="print-section">
+            <h3>Resumen de láminas cargadas / usadas</h3>
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Material</th>
+                    <th>Espesor</th>
+                    <th>Lámina</th>
+                    <th>Cargadas</th>
+                    <th>Usadas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${sheetsSummary.rows.map(r => `
+                    <tr>
+                      <td>${escapeHtml(r.material)}</td>
+                      <td>${escapeHtml(String(r.espesor))} mm</td>
+                      <td>${escapeHtml(r.size)}</td>
+                      <td>${fmt(r.loaded, 0)}</td>
+                      <td>${fmt(r.used, 0)}</td>
+                    </tr>
+                  `).join("") || `<tr><td colspan="5">Sin datos</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="print-section">
+            <h3>Modelos de la optimización</h3>
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Modelo</th>
+                    <th>Material</th>
+                    <th>Espesor</th>
+                    <th>Forma</th>
+                    <th>Final</th>
+                    <th>Corte</th>
+                    <th>Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${partsSummary.map(r => `
+                    <tr>
+                      <td>${escapeHtml(r.etiqueta)}</td>
+                      <td>${escapeHtml(r.material)}</td>
+                      <td>${escapeHtml(String(r.espesor))} mm</td>
+                      <td>${escapeHtml(r.forma || "-")}</td>
+                      <td>${escapeHtml(r.final)}</td>
+                      <td>${escapeHtml(r.cut)}</td>
+                      <td>${fmt(r.qty, 0)}</td>
+                    </tr>
+                  `).join("") || `<tr><td colspan="7">Sin datos</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          ${state.summary.unplaced.length ? `
+            <div class="print-section">
+              <h3>Piezas no colocadas</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Modelo</th>
+                      <th>Material</th>
+                      <th>Espesor</th>
+                      <th>Final</th>
+                      <th>Corte</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${state.summary.unplaced.map(p => `
+                      <tr>
+                        <td>${escapeHtml(p.etiqueta)}</td>
+                        <td>${escapeHtml(p.material)}</td>
+                        <td>${escapeHtml(String(p.espesor))} mm</td>
+                        <td>${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</td>
+                        <td>${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ""}
+        </div>
+      `;
+
+      plans.forEach((plan, idx) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "print-plan page-break";
+
+        const modelSummary = summarizePlanModels(plan);
+        const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
+
+        wrapper.innerHTML = `
+          <div class="sheetCard">
+            <div class="sheetTitle">
+              <div>
+                <h3>Lámina / Patrón ${idx + 1}</h3>
+                <div class="sheetSub">${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm${plan.count > 1 ? ` · Repetido x ${plan.count}` : ""}</div>
+              </div>
+              <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
+            </div>
+
+            <div class="sheetViewport">
+              <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
+            </div>
+
+            <div class="print-section">
+              <h3>Desglose de modelos en esta lámina</h3>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Modelo</th>
+                      <th>Cantidad en patrón</th>
+                      <th>Medida final</th>
+                      <th>Medida corte</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${modelSummary.map(r => `
+                      <tr>
+                        <td>${escapeHtml(r.etiqueta)}</td>
+                        <td>${fmt(r.qty, 0)}</td>
+                        <td>${escapeHtml(r.final)}</td>
+                        <td>${escapeHtml(r.cut)}</td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+
+        root.appendChild(wrapper);
+        drawSheet(plan, root.querySelector(`#printSheetCanvas_${idx}`));
+      });
+    }
+
+    function summarizeAllParts() {
+      const map = new Map();
+      state.selectedParts.forEach(p => {
+        const key = `${p.etiqueta}__${p.material}__${p.espesor}__${p.forma}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            etiqueta: p.etiqueta,
+            material: p.material,
+            espesor: p.espesor,
+            forma: p.forma,
+            final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
+            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`,
+            qty: 0
+          });
+        }
+        map.get(key).qty += p.cantidad;
+      });
+      return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
+    }
+
+    function summarizeLoadedSheets() {
+      const loadedMap = new Map();
+      state.selectedSheets.forEach(s => {
+        const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
+        if (!loadedMap.has(key)) {
+          loadedMap.set(key, {
+            material: s.material,
+            espesor: s.espesor,
+            size: `${fmt(s.ancho)} × ${fmt(s.largo)}`,
+            loaded: 0,
+            used: 0
+          });
+        }
+        loadedMap.get(key).loaded += s.cantidad;
+      });
+
+      (state.plans || []).forEach(p => {
+        const key = `${p.stock.material}__${p.stock.espesor}__${p.stock.ancho}__${p.stock.largo}`;
+        if (!loadedMap.has(key)) {
+          loadedMap.set(key, {
+            material: p.stock.material,
+            espesor: p.stock.espesor,
+            size: `${fmt(p.stock.ancho)} × ${fmt(p.stock.largo)}`,
+            loaded: 0,
+            used: 0
+          });
+        }
+        loadedMap.get(key).used += p.count || 1;
+      });
+
+      return { rows: [...loadedMap.values()] };
+    }
+
+    function doPrint() {
+      if (!state.plans.length) {
+        setStatus($("noticeBox"), "Primero debes optimizar para poder imprimir o guardar PDF.", "warn");
+        return;
+      }
+      buildPrintArea();
+      window.print();
     }
 
     function openModal(id) { $(id).classList.add("show"); }
@@ -1261,6 +1590,7 @@
 
       $("refreshBtn").addEventListener("click", refreshCatalogs);
       $("optimizeBtn").addEventListener("click", optimize);
+      $("printBtn").addEventListener("click", doPrint);
 
       $("filterCliente").addEventListener("change", e => { state.filters.cliente = e.target.value; renderCatalogModelDatalist(); });
       $("filterMaterial").addEventListener("change", e => { state.filters.material = e.target.value; renderCatalogModelDatalist(); });
