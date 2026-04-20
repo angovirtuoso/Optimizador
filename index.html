@@ -27,7 +27,6 @@
       --fs-sm:13px;
       --fs-md:14px;
       --fs-lg:18px;
-      --radius:22px;
     }
 
     body.dark{
@@ -661,7 +660,6 @@
 
         state.connectionOk = true;
         setConnection("ok", "Conectado");
-        setStatus($("noticeBox"), "Catálogos cargados correctamente desde la base.", "ok");
       } catch (err) {
         state.connectionOk = false;
         const msg = String(err && err.message ? err.message : err);
@@ -703,7 +701,6 @@
 
       renderPartsTable();
       updateNotices();
-      setStatus($("noticeBox"), "Modelo agregado a la optimización actual.", "ok");
     }
 
     function addManualModel() {
@@ -750,7 +747,6 @@
       closeModal("manualModalBack");
       renderPartsTable();
       updateNotices();
-      setStatus($("noticeBox"), "Modelo manual agregado al optimizador.", "ok");
     }
 
     function resetManualForm() {
@@ -783,7 +779,6 @@
       state.selectedSheets.push(rec);
       renderSheetsTable();
       updateNotices();
-      setStatus($("noticeBox"), "Lámina agregada al optimizador.", "ok");
     }
 
     function expandSheets() {
@@ -978,9 +973,6 @@
       renderPlans();
       syncKpis();
       updateNotices();
-
-      if (!unplaced.length) setStatus($("noticeBox"), "Optimización completada correctamente.", "ok");
-      else setStatus($("noticeBox"), `Optimización completada con ${unplaced.length} pieza(s) sin colocar.`, "warn");
     }
 
     function summarizePlanModels(plan) {
@@ -1149,51 +1141,96 @@
     function updateNotices() {
       const notices = [];
 
-      if (!state.connectionOk) notices.push("No hay conexión válida con el catálogo. Revisa /api/getCatalogs.");
-      if (!state.selectedParts.length) notices.push("Aún no has agregado modelos para optimizar.");
-      if (!state.selectedSheets.length) notices.push("Aún no has agregado láminas para optimizar.");
+      if (!state.connectionOk) {
+        notices.push("No hay conexión válida con el catálogo. Revisa /api/getCatalogs.");
+      }
+
+      if (!state.selectedParts.length) {
+        notices.push("Aún no has agregado modelos para optimizar.");
+      }
+
+      if (!state.selectedSheets.length) {
+        notices.push("Aún no has agregado láminas para optimizar.");
+      }
 
       const expandedParts = expandParts();
 
-      if (expandedParts.length && state.selectedSheets.length) {
-        const missingCompat = expandedParts.filter(p =>
-          !state.selectedSheets.some(s => s.material === p.material && String(s.espesor) === String(p.espesor))
-        );
-
-        if (missingCompat.length) {
-          const grouped = {};
-          missingCompat.forEach(p => {
-            const key = `${p.material}__${p.espesor}`;
-            grouped[key] = grouped[key] || { material: p.material, espesor: p.espesor, qty: 0 };
-            grouped[key].qty += 1;
-          });
-
-          Object.values(grouped).forEach(g => {
-            notices.push(`No hay lámina compatible cargada para ${g.material} ${g.espesor}mm. Piezas afectadas: ${g.qty}.`);
-          });
-        }
-
-        const stockGroups = {};
-        state.selectedSheets.forEach(s => {
-          const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
-          stockGroups[key] = stockGroups[key] || { ...s, total: 0 };
-          stockGroups[key].total += s.cantidad;
+      if (expandedParts.length) {
+        const partGroups = {};
+        expandedParts.forEach(p => {
+          const key = `${p.material}__${p.espesor}`;
+          partGroups[key] = partGroups[key] || {
+            material: p.material,
+            espesor: p.espesor,
+            parts: []
+          };
+          partGroups[key].parts.push(p);
         });
 
-        Object.values(stockGroups).forEach(g => {
-          const compatibleParts = expandedParts.filter(p => p.material === g.material && String(p.espesor) === String(g.espesor));
-          if (!compatibleParts.length) return;
+        const defaultCatalogSheet =
+          state.catalogs.laminas.find(x => num(x.Ancho) === 2600 && num(x.Largo) === 3600) ||
+          state.catalogs.laminas[0] ||
+          { Ancho: 2600, Largo: 3600, Etiqueta: "2600 x 3600" };
 
-          const required = exactSheetsRequired(
-            compatibleParts,
-            { material: g.material, espesor: g.espesor, ancho: g.ancho, largo: g.largo }
+        Object.values(partGroups).forEach(group => {
+          const compatibleLoadedSheets = state.selectedSheets.filter(
+            s => s.material === group.material && String(s.espesor) === String(group.espesor)
           );
 
-          if (!Number.isFinite(required)) {
-            notices.push(`La lámina ${g.ancho} × ${g.largo} mm de ${g.material} ${g.espesor}mm no alcanza en tamaño para al menos una pieza compatible.`);
-          } else if (g.total < required) {
-            notices.push(`Para ${g.material} ${g.espesor}mm en lámina ${g.ancho} × ${g.largo} mm, se requieren ${required} láminas en total. Actualmente tienes ${g.total}. Faltan ${required - g.total}.`);
+          if (!compatibleLoadedSheets.length) {
+            const refStock = {
+              material: group.material,
+              espesor: group.espesor,
+              ancho: num(defaultCatalogSheet.Ancho),
+              largo: num(defaultCatalogSheet.Largo)
+            };
+
+            const required = exactSheetsRequired(group.parts, refStock);
+
+            if (!Number.isFinite(required)) {
+              notices.push(
+                `No hay lámina compatible cargada para ${group.material} ${group.espesor}mm y al menos una pieza no cabe ni siquiera en la lámina de referencia ${fmt(refStock.ancho)} × ${fmt(refStock.largo)} mm.`
+              );
+            } else {
+              notices.push(
+                `No es posible optimizar ${group.material} ${group.espesor}mm con las láminas actualmente cargadas. Para esta carga se requieren ${required} lámina(s) de referencia ${fmt(refStock.ancho)} × ${fmt(refStock.largo)} mm del mismo material y espesor.`
+              );
+            }
+
+            return;
           }
+
+          const loadedGroups = {};
+          compatibleLoadedSheets.forEach(s => {
+            const key = `${s.ancho}__${s.largo}`;
+            loadedGroups[key] = loadedGroups[key] || {
+              material: s.material,
+              espesor: s.espesor,
+              ancho: s.ancho,
+              largo: s.largo,
+              total: 0
+            };
+            loadedGroups[key].total += s.cantidad;
+          });
+
+          Object.values(loadedGroups).forEach(g => {
+            const required = exactSheetsRequired(group.parts, {
+              material: g.material,
+              espesor: g.espesor,
+              ancho: g.ancho,
+              largo: g.largo
+            });
+
+            if (!Number.isFinite(required)) {
+              notices.push(
+                `La lámina ${fmt(g.ancho)} × ${fmt(g.largo)} mm de ${g.material} ${g.espesor}mm no alcanza en tamaño para al menos una pieza compatible.`
+              );
+            } else if (g.total < required) {
+              notices.push(
+                `Para ${g.material} ${g.espesor}mm en lámina ${fmt(g.ancho)} × ${fmt(g.largo)} mm, se requieren ${required} lámina(s) en total. Actualmente tienes ${g.total}. Faltan ${required - g.total}.`
+              );
+            }
+          });
         });
       }
 
@@ -1201,8 +1238,11 @@
         notices.push(`Hay ${state.summary.unplaced.length} pieza(s) sin colocar después de optimizar.`);
       }
 
-      if (!notices.length) setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
-      else setStatus($("noticeBox"), notices.map(n => `• ${escapeHtml(n)}`).join("<br>"), "warn");
+      if (!notices.length) {
+        setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
+      } else {
+        setStatus($("noticeBox"), notices.map(n => `• ${escapeHtml(n)}`).join("<br>"), "warn");
+      }
 
       syncKpis();
     }
