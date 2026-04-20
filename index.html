@@ -230,30 +230,33 @@
       }
 
       html, body{
-        background:#fff !important;
-        color:#000 !important;
         margin:0 !important;
         padding:0 !important;
+        background:#fff !important;
+        color:#000 !important;
         font-size:10px !important;
       }
 
-      body *{
-        visibility:hidden !important;
+      body{
+        overflow:visible !important;
       }
 
-      #printArea,
-      #printArea *{
-        visibility:visible !important;
+      .app{
+        display:none !important;
       }
 
       #printArea{
         display:block !important;
-        position:absolute !important;
-        inset:0 !important;
+        visibility:visible !important;
+        position:static !important;
         width:100% !important;
         margin:0 !important;
         padding:0 !important;
         background:#fff !important;
+      }
+
+      #printArea *{
+        visibility:visible !important;
       }
 
       .print-only{
@@ -262,9 +265,9 @@
 
       .print-plan{
         width:100% !important;
+        overflow:hidden !important;
         break-after:page;
         page-break-after:always;
-        overflow:hidden !important;
         margin:0 !important;
         padding:0 !important;
       }
@@ -272,21 +275,6 @@
       .print-plan:last-child{
         break-after:auto;
         page-break-after:auto;
-      }
-
-      .topbar,
-      .grid,
-      .card,
-      .modalBack,
-      .chip,
-      .switchWrap,
-      #noticeBox,
-      #refreshBtn,
-      #optimizeBtn,
-      #printBtn,
-      #openLoadModalBtn,
-      #openSaveModalBtn{
-        display:none !important;
       }
 
       #printArea .sheetCard,
@@ -394,10 +382,6 @@
         overflow:hidden !important;
       }
 
-      .resultLayout{
-        display:block !important;
-      }
-
       .summaryCard{
         margin-top:6px !important;
         padding:6px !important;
@@ -494,12 +478,6 @@
     </div>
 
     <div class="card" style="margin-bottom:16px;">
-      <div class="sectionHead" style="margin-bottom:10px;">
-        <div>
-          <h2>Avisos / Estatus</h2>
-          <div class="subtle">Compatibilidad, faltantes y observaciones del plan</div>
-        </div>
-      </div>
       <div id="noticeBox" class="status">Aún no hay avisos.</div>
     </div>
 
@@ -619,9 +597,9 @@
         </div>
       </div>
     </div>
-
-    <div id="printArea" class="print-only"></div>
   </div>
+
+  <div id="printArea" class="print-only"></div>
 
   <div id="manualModalBack" class="modalBack">
     <div class="modal">
@@ -1660,7 +1638,6 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
         const naturalHeight = card.scrollHeight;
         const naturalWidth = card.scrollWidth;
-
         const scale = Math.min(1, pageHeightPx / naturalHeight);
 
         card.style.transform = `scale(${scale})`;
@@ -1770,12 +1747,13 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
       buildPrintArea();
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         fitPrintPagesToOneSheet();
+
         setTimeout(() => {
           window.print();
-        }, 120);
-      }, 120);
+        }, 300);
+      });
     }
 
     async function saveOptimization() {
