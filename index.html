@@ -22,6 +22,10 @@
       --bad:#b91c1c;
       --badBg:#fef2f2;
       --shadow:0 12px 30px rgba(15,23,42,.08);
+      --font-sm:12px;
+      --font-ui:13px;
+      --font-md:14px;
+      --font-title:18px;
     }
 
     body.dark{
@@ -50,363 +54,167 @@
       background:linear-gradient(180deg,var(--bg),var(--bg2));
       color:var(--text);
       min-height:100vh;
+      font-size:var(--font-ui);
     }
 
-    .app{
-      max-width:1540px;
-      margin:0 auto;
-      padding:22px;
-    }
-
+    .app{max-width:1560px;margin:0 auto;padding:18px}
     .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:16px;
-      flex-wrap:wrap;
-      margin-bottom:18px;
+      display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+      margin-bottom:14px
     }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-
+    .brand{display:flex;align-items:center;gap:12px}
     .logoBox{
-      width:116px;
-      height:44px;
-      display:grid;
-      place-items:center;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:#fff;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      padding:4px 8px;
+      width:108px;height:40px;display:grid;place-items:center;border:1px solid var(--line);
+      border-radius:14px;background:#fff;box-shadow:var(--shadow);overflow:hidden;padding:4px 8px
     }
-
     body.dark .logoBox{background:#fff}
-    .logoBox img{
-      max-width:100%;
-      max-height:100%;
-      object-fit:contain;
-      display:block;
-    }
-
-    .brandText h1{
-      margin:0;
-      font-size:18px;
-      letter-spacing:-.03em;
-    }
-
-    .brandText p{
-      margin:2px 0 0;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .toolbar{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
+    .logoBox img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+    .brandText h1{margin:0;font-size:var(--font-title);letter-spacing:-.03em}
+    .brandText p{margin:1px 0 0;font-size:var(--font-sm);color:var(--muted)}
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
     button,input,select,textarea{font:inherit}
-
     button{
-      min-height:42px;
-      border:1px solid var(--line);
-      background:var(--card);
-      color:var(--text);
-      border-radius:14px;
-      padding:0 14px;
-      cursor:pointer;
-      transition:.18s ease;
+      min-height:38px;border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:12px;padding:0 12px;cursor:pointer;transition:.18s ease;font-size:var(--font-ui)
     }
-
     button:hover{transform:translateY(-1px)}
+    button.primary{background:var(--primary);color:var(--primaryText)}
+    button.warn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+    body.dark button.warn{background:#2a1f06;color:#fcd34d;border-color:#6b4f08}
 
-    button.primary{
-      background:var(--primary);
-      color:var(--primaryText);
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);
+      border-radius:999px;padding:7px 12px;font-size:var(--font-sm)
     }
+    .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+    .chip.ok .dot{background:var(--ok)}
+    .chip.bad .dot{background:var(--bad)}
+    .chip.warn .dot{background:var(--warn)}
 
-    button.warn{
-      background:#fff7ed;
-      color:#9a3412;
-      border-color:#fed7aa;
-    }
-
-    body.dark button.warn{
-      background:#2a1f06;
-      color:#fcd34d;
-      border-color:#6b4f08;
-    }
-
-    .switchWrap{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:var(--muted);
-    }
-
-    .switch{
-      position:relative;
-      width:46px;
-      height:28px;
-      display:inline-block;
-    }
-
+    .switchWrap{display:flex;align-items:center;gap:8px;font-size:var(--font-sm);color:var(--muted)}
+    .switch{position:relative;width:46px;height:28px;display:inline-block}
     .switch input{display:none}
-
-    .slider{
-      position:absolute;
-      inset:0;
-      background:#cbd5e1;
-      border-radius:999px;
-      transition:.2s;
-    }
-
-    .slider:before{
-      content:"";
-      position:absolute;
-      left:3px;
-      top:3px;
-      width:22px;
-      height:22px;
-      border-radius:50%;
-      background:#fff;
-      transition:.2s;
-    }
-
+    .slider{position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s}
+    .slider:before{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
     .switch input:checked + .slider{background:#2563eb}
     .switch input:checked + .slider:before{transform:translateX(18px)}
 
+    .grid{display:grid;grid-template-columns:480px minmax(0,1fr);gap:16px}
+    .stack{display:grid;gap:16px}
+
     .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:28px;
-      padding:18px;
-      box-shadow:var(--shadow);
+      background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:var(--shadow)
     }
-
     .sectionHead{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:14px;
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px
     }
+    .sectionHead h2,.sectionHead h3{margin:0;font-size:18px;letter-spacing:-.03em}
+    .subtle{font-size:var(--font-sm);color:var(--muted)}
 
-    .sectionHead h2,.sectionHead h3{
-      margin:0;
-      font-size:22px;
-      letter-spacing:-.03em;
-    }
-
-    .subtle{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns:460px minmax(0,1fr);
-      gap:18px;
-    }
-
-    .stack{
-      display:grid;
-      gap:18px;
-    }
-
-    .row2,.row3,.row4,.row5{
-      display:grid;
-      gap:10px;
-    }
-
+    .row2,.row3,.row4,.row5{display:grid;gap:10px}
     .row2{grid-template-columns:repeat(2,minmax(0,1fr))}
     .row3{grid-template-columns:repeat(3,minmax(0,1fr))}
     .row4{grid-template-columns:repeat(4,minmax(0,1fr))}
     .row5{grid-template-columns:repeat(5,minmax(0,1fr))}
 
     label{display:block}
-
-    label .lab{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:6px;
-    }
-
+    label .lab{display:block;font-size:var(--font-sm);color:var(--muted);margin-bottom:6px}
     input,select,textarea{
-      width:100%;
-      min-height:44px;
-      border:1px solid var(--line);
-      background:var(--card);
-      color:var(--text);
-      border-radius:14px;
-      padding:0 14px;
-      outline:none;
+      width:100%;min-height:40px;border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:12px;padding:0 12px;outline:none;font-size:var(--font-ui)
     }
+    textarea{min-height:82px;padding:10px 12px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.18)}
 
-    textarea{
-      min-height:88px;
-      padding:12px 14px;
-      resize:vertical;
-    }
-
-    input:focus,select:focus,textarea:focus{
-      border-color:#60a5fa;
-      box-shadow:0 0 0 3px rgba(96,165,250,.18);
-    }
+    .tableWrap{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:var(--font-ui);vertical-align:top}
+    th{background:rgba(148,163,184,.08);color:var(--muted);font-weight:700}
+    tr:last-child td{border-bottom:none}
+    .actions{display:flex;gap:6px;flex-wrap:wrap}
+    .miniBtn{min-height:32px;padding:0 10px;border-radius:10px;font-size:var(--font-sm)}
 
     .status{
-      padding:12px 14px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      font-size:13px;
-      line-height:1.45;
-      background:var(--card);
+      padding:12px 14px;border-radius:14px;border:1px solid var(--line);font-size:var(--font-ui);
+      line-height:1.45;background:var(--card)
     }
+    .status.ok{background:var(--okBg);color:var(--ok)}
+    .status.warn{background:var(--warnBg);color:var(--warn)}
+    .status.bad{background:var(--badBg);color:var(--bad)}
 
-    .status.ok{
-      background:var(--okBg);
-      color:var(--ok);
+    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
+    .kpi .k{font-size:var(--font-sm);color:var(--muted)}
+    .kpi .v{margin-top:6px;font-size:28px;font-weight:700;letter-spacing:-.04em}
+    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .tab{
+      border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:999px;padding:8px 12px;cursor:pointer;font-size:var(--font-sm)
     }
+    .tab.active{background:var(--primary);color:var(--primaryText)}
 
-    .status.warn{
-      background:var(--warnBg);
-      color:var(--warn);
+    .resultLayout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px}
+    .sheetCard,.summaryCard{
+      border:1px solid var(--line);border-radius:22px;background:var(--card);padding:14px
     }
+    .sheetTitle{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+    .sheetTitle h3{margin:0;font-size:22px;letter-spacing:-.04em}
+    .sheetSub{font-size:var(--font-sm);color:var(--muted)}
 
-    .status.bad{
-      background:var(--badBg);
-      color:var(--bad);
+    .pill{
+      padding:8px 12px;border-radius:999px;font-size:var(--font-sm);font-weight:700
     }
+    .pill.red{background:#fee2e2;color:#b91c1c}
+    .pill.yellow{background:#fef3c7;color:#a16207}
+    .pill.green{background:#dcfce7;color:#15803d}
 
-    .tableWrap{
-      border:1px solid var(--line);
-      border-radius:18px;
-      overflow:hidden;
+    .sheetViewport{
+      border:1px solid var(--line);border-radius:20px;background:var(--soft);padding:12px
     }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
+    .sheetCanvas{
+      position:relative;width:100%;max-width:760px;aspect-ratio:.72;min-height:640px;margin:0 auto;
+      background:#fff;border:2px dashed #cbd5e1;border-radius:18px;overflow:hidden
     }
+    body.dark .sheetCanvas{background:#0b1220;border-color:#334155}
 
-    th,td{
-      padding:12px;
-      border-bottom:1px solid var(--line);
-      text-align:left;
-      font-size:13px;
-      vertical-align:top;
+    .placement{
+      position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px
     }
-
-    th{
-      background:rgba(148,163,184,.08);
-      color:var(--muted);
-      font-weight:700;
+    .placementInner{
+      position:absolute;inset:0;display:grid;place-items:center;padding:6px;text-align:center;line-height:1.12
     }
+    .placementText{max-width:100%}
+    .placementLabel{font-size:clamp(8px,0.95vw,12px);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .placementSub{font-size:clamp(7px,0.85vw,10px)}
+    .shapeVisual{position:absolute;border:1px solid rgba(15,23,42,.7)}
 
-    tr:last-child td{border-bottom:none}
-
-    .actions{
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-    }
-
-    .miniBtn{
-      min-height:34px;
-      padding:0 10px;
-      border-radius:12px;
-      font-size:12px;
-    }
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .kpi{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:16px;
-      box-shadow:var(--shadow);
-    }
-
-    .kpi .k{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .kpi .v{
-      margin-top:6px;
-      font-size:30px;
-      font-weight:700;
-      letter-spacing:-.04em;
-    }
-
-    .folio{
-      font-weight:700;
-      letter-spacing:.02em;
-    }
-
-    .inline{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
+    .miniSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .miniBox{border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--soft);text-align:center}
+    .miniBox .k{font-size:var(--font-sm);color:var(--muted)}
+    .miniBox .v{font-size:18px;font-weight:700;margin-top:4px}
 
     .modalBack{
-      position:fixed;
-      inset:0;
-      background:rgba(2,6,23,.45);
-      backdrop-filter:blur(4px);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
-      z-index:50;
+      position:fixed;inset:0;background:rgba(2,6,23,.45);backdrop-filter:blur(4px);display:none;
+      align-items:center;justify-content:center;padding:24px;z-index:50
     }
-
     .modalBack.show{display:flex}
-
     .modal{
-      width:min(980px,100%);
-      max-height:92vh;
-      overflow:auto;
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:28px;
-      padding:18px;
-      box-shadow:var(--shadow);
+      width:min(980px,100%);max-height:92vh;overflow:auto;background:var(--card);
+      border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:var(--shadow)
     }
-
-    .modalFooter{
-      display:flex;
-      justify-content:flex-end;
-      gap:8px;
-      margin-top:14px;
-      flex-wrap:wrap;
-    }
+    .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
     @media (max-width:1280px){
       .grid{grid-template-columns:1fr}
       .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr 1fr}
+      .resultLayout{grid-template-columns:1fr}
     }
-
     @media (max-width:760px){
-      .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr}
+      .row5,.row4,.row3,.row2,.kpis,.miniSummary{grid-template-columns:1fr}
+      .sheetCanvas{min-height:520px}
     }
   </style>
 </head>
@@ -415,14 +223,20 @@
     <div class="topbar">
       <div class="brand">
         <div class="logoBox">
-          <img id="brandLogo" src="/prodiesa-logo.png" alt="Prodiesa" />
+          <img src="/prodiesa-logo.png" alt="Prodiesa" />
         </div>
         <div class="brandText">
           <h1>PRODIESA OPTIMIZADOR</h1>
-          <p>Catálogos, modelos manuales y persistencia por folio</p>
+          <p>Optimizador de corte para vidrio y espejo</p>
         </div>
       </div>
+
       <div class="toolbar">
+        <div id="connectionChip" class="chip warn">
+          <span class="dot"></span>
+          <span id="connectionChipText">Sin validar</span>
+        </div>
+
         <div class="switchWrap">
           <span>Dark mode</span>
           <label class="switch">
@@ -430,44 +244,12 @@
             <span class="slider"></span>
           </label>
         </div>
+
         <button id="refreshBtn">Actualizar catálogos</button>
+        <button id="optimizeBtn" class="primary">Optimizar</button>
         <button id="openLoadModalBtn">Cargar optimización</button>
-        <button id="openSaveModalBtn" class="primary">Guardar optimización</button>
+        <button id="openSaveModalBtn" class="warn">Guardar optimización</button>
       </div>
-    </div>
-
-    <div class="card" style="margin-bottom:18px">
-      <div class="sectionHead">
-        <div>
-          <h2>Conexión</h2>
-          <div class="subtle">Estado del servicio y de la optimización actual</div>
-        </div>
-      </div>
-
-      <div class="row2">
-        <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
-          <div>
-            <div class="subtle">Folio actual</div>
-            <div id="currentFolio" class="folio">—</div>
-          </div>
-          <div>
-            <div class="subtle">Nombre de optimización</div>
-            <div id="currentOptName" class="folio">—</div>
-          </div>
-        </div>
-
-        <div class="inline" style="justify-content:space-between;border:1px solid var(--line);border-radius:16px;padding:12px 14px">
-          <div>
-            <div class="subtle">Estado de conexión</div>
-            <div id="connectionBadge" class="folio">Sin validar</div>
-          </div>
-          <div>
-            <button id="reconnectBtn">Reconectar</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:12px" id="apiStatus" class="status">Presiona “Actualizar catálogos” para validar la conexión.</div>
     </div>
 
     <div class="grid">
@@ -476,7 +258,7 @@
           <div class="sectionHead">
             <div>
               <h2>Catálogo de modelos</h2>
-              <div class="subtle">Busca modelos oficiales en la base</div>
+              <div class="subtle">Busca modelos oficiales y agrégalos al optimizador</div>
             </div>
             <button id="addCatalogModelBtn">Agregar a optimizador</button>
           </div>
@@ -509,33 +291,8 @@
         <div class="card">
           <div class="sectionHead">
             <div>
-              <h2>Modelos agregados</h2>
-              <div class="subtle">Estos forman parte de la optimización actual</div>
-            </div>
-          </div>
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Etiqueta</th>
-                  <th>Material</th>
-                  <th>Medida corte</th>
-                  <th>Cant.</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="partsTbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="stack">
-        <div class="card">
-          <div class="sectionHead">
-            <div>
               <h2>Láminas</h2>
-              <div class="subtle">Captura las láminas para la optimización actual</div>
+              <div class="subtle">Captura las láminas disponibles para optimizar</div>
             </div>
             <button id="addSheetBtn">Agregar a optimizador</button>
           </div>
@@ -564,21 +321,63 @@
           </div>
         </div>
 
-        <div class="kpis">
-          <div class="kpi"><div class="k">Modelos agregados</div><div class="v" id="kpiModels">0</div></div>
-          <div class="kpi"><div class="k">Láminas agregadas</div><div class="v" id="kpiSheets">0</div></div>
-          <div class="kpi"><div class="k">Folio actual</div><div class="v" id="kpiFolio">—</div></div>
-          <div class="kpi"><div class="k">Estado</div><div class="v" id="kpiState">Sin validar</div></div>
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Modelos agregados</h2>
+              <div class="subtle">Lista actual de piezas a optimizar</div>
+            </div>
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etiqueta</th>
+                  <th>Material</th>
+                  <th>Medida corte</th>
+                  <th>Cant.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="partsTbody"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="card">
           <div class="sectionHead">
             <div>
-              <h2>Persistencia</h2>
-              <div class="subtle">Guardar y cargar optimizaciones por folio y nombre</div>
+              <h2>Avisos / Estatus</h2>
+              <div class="subtle">Compatibilidad, faltantes y observaciones de optimización</div>
             </div>
           </div>
-          <div id="persistenceStatus" class="status">Aún no has guardado ninguna optimización en esta sesión.</div>
+          <div id="noticeBox" class="status">Aún no hay avisos.</div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="kpis">
+          <div class="kpi"><div class="k">Láminas usadas</div><div class="v" id="kpiUsedSheets">0</div></div>
+          <div class="kpi"><div class="k">Piezas colocadas</div><div class="v" id="kpiPlacedParts">0</div></div>
+          <div class="kpi"><div class="k">Uso lámina cargada</div><div class="v" id="kpiYieldLoaded">0%</div></div>
+          <div class="kpi"><div class="k">Rend. láminas usadas</div><div class="v" id="kpiUsedYield">0%</div></div>
+          <div class="kpi"><div class="k">Desperdicio</div><div class="v" id="kpiWaste">0 m²</div></div>
+        </div>
+
+        <div class="card">
+          <div class="sectionHead">
+            <div>
+              <h2>Resultados</h2>
+              <div class="subtle">Plan de corte visual por lámina</div>
+            </div>
+            <div class="inline">
+              <div class="subtle">Folio: <strong id="currentFolio">—</strong></div>
+              <div class="subtle">Nombre: <strong id="currentOptName">—</strong></div>
+            </div>
+          </div>
+
+          <div id="planTabs" class="tabs"></div>
+          <div id="resultArea" class="status">Carga catálogos, agrega modelos y láminas, y luego presiona <b>Optimizar</b>.</div>
         </div>
       </div>
     </div>
@@ -589,7 +388,7 @@
       <div class="sectionHead">
         <div>
           <h2>Modelo nuevo / no registrado</h2>
-          <div class="subtle">Se guardará en la hoja Modelos y también se agregará al optimizador</div>
+          <div class="subtle">Se agregará al optimizador. Su guardado a base se conecta después.</div>
         </div>
       </div>
 
@@ -630,7 +429,7 @@
       <div class="sectionHead">
         <div>
           <h2>Guardar optimización</h2>
-          <div class="subtle">Asigna un nombre claro para reconocerla después</div>
+          <div class="subtle">Por ahora solo captura el nombre; el backend de guardado se conecta después.</div>
         </div>
       </div>
       <div class="row2">
@@ -649,7 +448,7 @@
       <div class="sectionHead">
         <div>
           <h2>Cargar optimización</h2>
-          <div class="subtle">Busca por folio</div>
+          <div class="subtle">Búsqueda por folio. El backend se conecta después.</div>
         </div>
       </div>
 
@@ -687,9 +486,20 @@
       selectedSheets: [],
       currentFolio: null,
       currentOptimizationName: null,
-      connectionOk: false
+      connectionOk: false,
+      plans: [],
+      activePlanIndex: 0,
+      summary: {
+        usedSheets: 0,
+        placedParts: 0,
+        yieldLoaded: 0,
+        usedYield: 0,
+        waste: 0,
+        unplaced: []
+      }
     };
 
+    const OVAL_CIRCLE_TRIM_PER_SIDE = 17;
     const $ = (id) => document.getElementById(id);
     const uid = () => Math.random().toString(36).slice(2, 10);
     const num = (v) => {
@@ -697,6 +507,8 @@
       return Number.isFinite(n) ? n : 0;
     };
     const fmt = (v, digits = 1) => new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(num(v));
+    const fmtM2 = (mm2) => `${fmt(num(mm2) / 1000000, 3)} m²`;
+    const area = (w, h) => num(w) * num(h);
     const escapeHtml = (s) => String(s ?? "")
       .replace(/&/g,"&amp;")
       .replace(/</g,"&lt;")
@@ -705,13 +517,17 @@
       .replace(/'/g,"&#039;");
 
     function syncKpis() {
-      $("kpiModels").textContent = String(state.selectedParts.length);
-      $("kpiSheets").textContent = String(state.selectedSheets.length);
-      $("kpiFolio").textContent = state.currentFolio || "—";
+      $("kpiUsedSheets").textContent = String(state.summary.usedSheets || 0);
+      $("kpiPlacedParts").textContent = String(state.summary.placedParts || 0);
+      $("kpiYieldLoaded").textContent = `${fmt(state.summary.yieldLoaded || 0, 1)}%`;
+      $("kpiUsedYield").textContent = `${fmt(state.summary.usedYield || 0, 1)}%`;
+      $("kpiUsedYield").style.color =
+        state.summary.usedYield < 85 ? "var(--bad)" :
+        state.summary.usedYield <= 95 ? "var(--warn)" : "var(--ok)";
+      $("kpiWaste").textContent = fmtM2(state.summary.waste || 0);
+
       $("currentFolio").textContent = state.currentFolio || "—";
       $("currentOptName").textContent = state.currentOptimizationName || "—";
-      $("kpiState").textContent = state.connectionOk ? "Conectado" : "Sin conexión";
-      $("kpiState").style.color = state.connectionOk ? "var(--ok)" : "var(--bad)";
     }
 
     function setStatus(el, msg, kind = "") {
@@ -720,13 +536,11 @@
       el.innerHTML = msg;
     }
 
-    function setConnectionBadge(status, text) {
-      const el = $("connectionBadge");
-      el.textContent = text;
-      if (status === "ok") el.style.color = "var(--ok)";
-      else if (status === "warn") el.style.color = "var(--warn)";
-      else if (status === "bad") el.style.color = "var(--bad)";
-      else el.style.color = "var(--text)";
+    function setConnection(status, text) {
+      const chip = $("connectionChip");
+      const label = $("connectionChipText");
+      chip.className = "chip " + status;
+      label.textContent = text;
     }
 
     function renderSelect(selectId, options, placeholder, current) {
@@ -737,18 +551,9 @@
       else if (!placeholder && safe.length) select.value = safe[0];
     }
 
-    async function apiCall(action, payload = {}) {
-      let url = "";
-      let options = {};
-
-      if (action === "getCatalogs") {
-        url = "/api/getCatalogs";
-        options = { method: "GET" };
-      } else {
-        throw new Error("Acción aún no implementada: " + action);
-      }
-
-      const res = await fetch(url, options);
+    async function apiCall(action) {
+      if (action !== "getCatalogs") throw new Error("Acción aún no implementada: " + action);
+      const res = await fetch("/api/getCatalogs", { method: "GET" });
 
       let data;
       try {
@@ -757,11 +562,15 @@
         throw new Error("Respuesta inválida del servicio");
       }
 
-      if (!data.ok) {
-        throw new Error(data.error || "Error del servicio");
-      }
-
+      if (!data.ok) throw new Error(data.error || "Error del servicio");
       return data;
+    }
+
+    function shapeTrimPerSide(shape, explicit) {
+      if (num(explicit) > 0) return num(explicit);
+      const s = String(shape || "").toLowerCase();
+      if (s.includes("ovalo") || s.includes("óvalo") || s.includes("circular") || s.includes("circulo") || s.includes("círculo")) return OVAL_CIRCLE_TRIM_PER_SIDE;
+      return 0;
     }
 
     function currentFilteredModels() {
@@ -812,6 +621,7 @@
       renderSelect("manualEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
       renderSelect("manualForma", ["Rectangular", "Óvalo", "Circular", "Trapecio rectángulo", "Esq. Red."], "", "Rectangular");
       renderSelect("manualAcabado", state.catalogs.acabados.map(x => x.Acabado), "Selecciona", "");
+
       renderSelect("sheetMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
       renderSelect("sheetEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
 
@@ -827,7 +637,7 @@
         <tr>
           <td>${escapeHtml(p.etiqueta)}</td>
           <td>${escapeHtml(p.material)} ${escapeHtml(p.espesor)}mm</td>
-          <td>${fmt(p.anchoCorte)} × ${fmt(p.largoCorte)} mm</td>
+          <td>${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)} mm</td>
           <td>${fmt(p.cantidad, 0)}</td>
           <td><div class="actions"><button class="miniBtn" data-del-part="${p.id}">Eliminar</button></div></td>
         </tr>
@@ -837,7 +647,7 @@
         btn.onclick = () => {
           state.selectedParts = state.selectedParts.filter(p => p.id !== btn.dataset.delPart);
           renderPartsTable();
-          syncKpis();
+          updateNotices();
         };
       });
     }
@@ -857,20 +667,18 @@
         btn.onclick = () => {
           state.selectedSheets = state.selectedSheets.filter(s => s.id !== btn.dataset.delSheet);
           renderSheetsTable();
-          syncKpis();
+          updateNotices();
         };
       });
     }
 
     async function refreshCatalogs() {
       setStatus($("apiStatus"), "Validando conexión y leyendo catálogos…");
-      setConnectionBadge("warn", "Validando");
+      setConnection("warn", "Validando");
       state.connectionOk = false;
-      syncKpis();
 
       try {
         const data = await apiCall("getCatalogs");
-
         state.catalogs.modelos = data.catalogs.modelos || [];
         state.catalogs.materiales = data.catalogs.materiales || [];
         state.catalogs.espesores = data.catalogs.espesores || [];
@@ -883,15 +691,15 @@
 
         state.connectionOk = true;
         setStatus($("apiStatus"), "Servicio conectado correctamente. Catálogos cargados desde la base.", "ok");
-        setConnectionBadge("ok", "Conectado");
+        setConnection("ok", "Conectado");
       } catch (err) {
         state.connectionOk = false;
         const msg = String(err && err.message ? err.message : err);
         setStatus($("apiStatus"), `No se pudo cargar el catálogo. ${escapeHtml(msg)}`, "bad");
-        setConnectionBadge("bad", "Sin conexión");
+        setConnection("bad", "Sin conexión");
       }
 
-      syncKpis();
+      updateNotices();
     }
 
     function addCatalogModel() {
@@ -904,19 +712,87 @@
         return;
       }
 
+      const trim = shapeTrimPerSide(selected.Forma, selected.Trim_Especial);
+
       state.selectedParts.push({
         id: uid(),
         etiqueta: (selected.Etiqueta || `${selected.Modelo} - ${selected.Cliente}`).trim(),
         material: selected.Material,
         espesor: String(selected.Espesor),
-        anchoCorte: num(selected.Ancho_Corte),
-        largoCorte: num(selected.Largo_Corte),
+        forma: selected.Forma,
+        acabado: selected.Acabado,
+        anchoFinal: num(selected.Ancho_Final),
+        largoFinal: num(selected.Largo_Final),
+        anchoCorteBase: num(selected.Ancho_Corte),
+        largoCorteBase: num(selected.Largo_Corte),
+        anchoCorteOpt: num(selected.Ancho_Corte) + trim * 2,
+        largoCorteOpt: num(selected.Largo_Corte) + trim * 2,
+        trimEspecial: trim,
         cantidad: Math.max(1, Math.round(num($("catalogModelQty").value || 1)))
       });
 
       renderPartsTable();
-      syncKpis();
+      updateNotices();
       setStatus($("apiStatus"), "Modelo agregado a la optimización actual.", "ok");
+    }
+
+    function addManualModel() {
+      const cliente = $("manualCliente").value.trim();
+      const modelo = $("manualModelo").value.trim();
+      const material = $("manualMaterial").value;
+      const espesor = $("manualEspesor").value;
+      const forma = $("manualForma").value;
+      const acabado = $("manualAcabado").value;
+      const anchoFinal = num($("manualAnchoFinal").value);
+      const largoFinal = num($("manualLargoFinal").value);
+      const anchoCorteBase = num($("manualAnchoCorte").value) || anchoFinal;
+      const largoCorteBase = num($("manualLargoCorte").value) || largoFinal;
+      const trimManual = num($("manualTrimEspecial").value || 0);
+      const cantidad = Math.max(1, Math.round(num($("manualQty").value || 1)));
+      const notas = $("manualNotas").value.trim();
+
+      if (!cliente || !modelo || !material || !espesor || !(anchoFinal > 0) || !(largoFinal > 0)) {
+        setStatus($("apiStatus"), "Completa Cliente, Modelo, Material, Espesor y medidas válidas.", "warn");
+        return;
+      }
+
+      const trim = shapeTrimPerSide(forma, trimManual);
+
+      state.selectedParts.push({
+        id: uid(),
+        etiqueta: `${modelo} - ${cliente}`,
+        material,
+        espesor,
+        forma,
+        acabado,
+        anchoFinal,
+        largoFinal,
+        anchoCorteBase,
+        largoCorteBase,
+        anchoCorteOpt: anchoCorteBase + trim * 2,
+        largoCorteOpt: largoCorteBase + trim * 2,
+        trimEspecial: trim,
+        cantidad,
+        notas
+      });
+
+      resetManualForm();
+      closeModal("manualModalBack");
+      renderPartsTable();
+      updateNotices();
+      setStatus($("apiStatus"), "Modelo manual agregado al optimizador.", "ok");
+    }
+
+    function resetManualForm() {
+      $("manualCliente").value = "";
+      $("manualModelo").value = "";
+      $("manualAnchoFinal").value = "";
+      $("manualLargoFinal").value = "";
+      $("manualAnchoCorte").value = "";
+      $("manualLargoCorte").value = "";
+      $("manualTrimEspecial").value = "0";
+      $("manualQty").value = "1";
+      $("manualNotas").value = "";
     }
 
     function addSheet() {
@@ -936,12 +812,454 @@
 
       state.selectedSheets.push(rec);
       renderSheetsTable();
+      updateNotices();
+      setStatus($("apiStatus"), "Lámina agregada al optimizador.", "ok");
+    }
+
+    function expandSheets() {
+      return state.selectedSheets.flatMap(s =>
+        Array.from({ length: Math.max(1, s.cantidad) }, () => ({ ...s, _id: uid() }))
+      );
+    }
+
+    function expandParts() {
+      return state.selectedParts.flatMap(p =>
+        Array.from({ length: Math.max(1, p.cantidad) }, () => ({
+          ...p,
+          _id: uid(),
+          width: p.anchoCorteOpt,
+          height: p.largoCorteOpt,
+          area: area(p.anchoCorteOpt, p.largoCorteOpt)
+        }))
+      );
+    }
+
+    function makeSheet(stock) {
+      return {
+        stock,
+        freeRects: [{ x: 0, y: 0, w: stock.ancho, h: stock.largo }],
+        placements: []
+      };
+    }
+
+    function pruneFreeRects(rects) {
+      return rects.filter((a, i) =>
+        !rects.some((b, j) =>
+          i !== j &&
+          a.x >= b.x &&
+          a.y >= b.y &&
+          a.x + a.w <= b.x + b.w &&
+          a.y + a.h <= b.y + b.h
+        )
+      );
+    }
+
+    function placeInSheet(sheet, part) {
+      let best = null;
+      for (let i = 0; i < sheet.freeRects.length; i++) {
+        const fr = sheet.freeRects[i];
+        const options = [{ w: part.width, h: part.height, rotated: false }];
+        if (part.width !== part.height) options.push({ w: part.height, h: part.width, rotated: true });
+
+        for (const op of options) {
+          if (op.w <= fr.w && op.h <= fr.h) {
+            const score = (fr.w - op.w) * (fr.h - op.h);
+            if (!best || score < best.score) best = { frIndex: i, score, ...op };
+          }
+        }
+      }
+
+      if (!best) return false;
+
+      const fr = sheet.freeRects.splice(best.frIndex, 1)[0];
+      const rightW = fr.w - best.w;
+      const bottomH = fr.h - best.h;
+
+      sheet.placements.push({
+        ...part,
+        x: fr.x,
+        y: fr.y,
+        w: best.w,
+        h: best.h,
+        rotated: best.rotated
+      });
+
+      if (rightW > 0) sheet.freeRects.push({ x: fr.x + best.w, y: fr.y, w: rightW, h: best.h });
+      if (bottomH > 0) sheet.freeRects.push({ x: fr.x, y: fr.y + best.h, w: fr.w, h: bottomH });
+      if (rightW > 0 && bottomH > 0) sheet.freeRects.push({ x: fr.x + best.w, y: fr.y + best.h, w: rightW, h: bottomH });
+
+      sheet.freeRects = pruneFreeRects(sheet.freeRects);
+      return true;
+    }
+
+    function exactSheetsRequired(parts, stock) {
+      if (!parts.length) return 0;
+      const sheets = [];
+      const sorted = [...parts].sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+      for (const part of sorted) {
+        let placed = false;
+        for (const sh of sheets) {
+          if (placeInSheet(sh, part)) {
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          const sh = makeSheet(stock);
+          if (!placeInSheet(sh, part)) return Infinity;
+          sheets.push(sh);
+        }
+      }
+      return sheets.length;
+    }
+
+    function buildPlanSignature(plan) {
+      const placements = (plan.placements || []).map(p => [
+        Math.round(num(p.x)),
+        Math.round(num(p.y)),
+        Math.round(num(p.w)),
+        Math.round(num(p.h)),
+        p.etiqueta || "",
+        p.forma || ""
+      ]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+      return JSON.stringify({
+        material: plan.stock.material,
+        espesor: plan.stock.espesor,
+        ancho: Math.round(num(plan.stock.ancho)),
+        largo: Math.round(num(plan.stock.largo)),
+        pcs: plan.placements.length,
+        placements
+      });
+    }
+
+    function groupPlans(plans) {
+      const groups = [];
+      const map = new Map();
+      plans.forEach((plan, idx) => {
+        const sig = buildPlanSignature(plan);
+        if (!map.has(sig)) {
+          const group = { ...plan, count: 1, indices: [idx] };
+          map.set(sig, group);
+          groups.push(group);
+        } else {
+          const g = map.get(sig);
+          g.count += 1;
+          g.indices.push(idx);
+        }
+      });
+      return groups;
+    }
+
+    function optimize() {
+      if (!state.selectedParts.length) {
+        setStatus($("noticeBox"), "Agrega al menos un modelo antes de optimizar.", "warn");
+        return;
+      }
+      if (!state.selectedSheets.length) {
+        setStatus($("noticeBox"), "Agrega al menos una lámina antes de optimizar.", "warn");
+        return;
+      }
+
+      const allSheets = expandSheets();
+      const allParts = expandParts().sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+      const sheetInstances = allSheets.map(makeSheet);
+      const unplaced = [];
+      let placedArea = 0;
+      let placedParts = 0;
+
+      allParts.forEach(part => {
+        const compatible = sheetInstances.filter(sh => sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor));
+        let placed = false;
+        for (const sh of compatible) {
+          if (placeInSheet(sh, part)) {
+            placed = true;
+            placedArea += part.area;
+            placedParts += 1;
+            break;
+          }
+        }
+        if (!placed) unplaced.push(part);
+      });
+
+      const usedPlans = sheetInstances
+        .filter(sh => sh.placements.length)
+        .map(sh => {
+          const usedArea = area(sh.stock.ancho, sh.stock.largo);
+          const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
+          return {
+            id: uid(),
+            stock: sh.stock,
+            placements: sh.placements,
+            usedArea,
+            placedArea: pArea,
+            wasteArea: Math.max(0, usedArea - pArea),
+            utilization: usedArea ? (pArea / usedArea) * 100 : 0
+          };
+        });
+
+      const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
+      const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
+
+      state.plans = groupPlans(usedPlans);
+      state.activePlanIndex = 0;
+      state.summary = {
+        usedSheets: usedPlans.length,
+        placedParts,
+        yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
+        usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
+        waste: Math.max(0, totalLoadedArea - placedArea),
+        unplaced
+      };
+
+      renderPlans();
       syncKpis();
-      setStatus($("apiStatus"), "Lámina agregada a la optimización actual.", "ok");
+      updateNotices();
+
+      if (!unplaced.length) {
+        setStatus($("apiStatus"), "Optimización completada correctamente.", "ok");
+      } else {
+        setStatus($("apiStatus"), `Optimización completada con ${unplaced.length} pieza(s) sin colocar.`, "warn");
+      }
+    }
+
+    function summarizePlanModels(plan) {
+      const map = new Map();
+      plan.placements.forEach(p => {
+        const key = `${p.etiqueta}__${p.anchoFinal}__${p.largoFinal}__${p.anchoCorteBase}__${p.largoCorteBase}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            etiqueta: p.etiqueta,
+            qty: 0,
+            final: `${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}`,
+            cut: `${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`
+          });
+        }
+        map.get(key).qty += 1;
+      });
+      return [...map.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta));
+    }
+
+    function renderPlans() {
+      const tabs = $("planTabs");
+      const areaBox = $("resultArea");
+      tabs.innerHTML = "";
+
+      if (!state.plans.length) {
+        areaBox.className = "status";
+        areaBox.innerHTML = "No hay plan de corte generado todavía.";
+        return;
+      }
+
+      state.plans.forEach((plan, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "tab" + (idx === state.activePlanIndex ? " active" : "");
+        btn.textContent = `${plan.stock.material} ${plan.stock.espesor}mm · Lámina ${idx + 1}${plan.count > 1 ? " x " + plan.count : ""}`;
+        btn.onclick = () => {
+          state.activePlanIndex = idx;
+          renderPlans();
+        };
+        tabs.appendChild(btn);
+      });
+
+      const plan = state.plans[state.activePlanIndex];
+      const modelSummary = summarizePlanModels(plan);
+      const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
+
+      areaBox.className = "";
+      areaBox.innerHTML = `
+        <div class="resultLayout">
+          <div class="sheetCard">
+            <div class="sheetTitle">
+              <div>
+                <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(plan.stock.espesor)}mm</h3>
+                <div class="sheetSub">Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm</div>
+              </div>
+              <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
+            </div>
+            <div class="sheetViewport">
+              <div id="sheetCanvas" class="sheetCanvas"></div>
+            </div>
+          </div>
+
+          <div class="summaryCard">
+            <div class="miniSummary">
+              <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
+              <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
+              <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
+              <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
+            </div>
+
+            <div style="margin-top:12px" class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Modelo</th>
+                    <th>Cant.</th>
+                    <th>Medida final</th>
+                    <th>Medida corte</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${modelSummary.map(r => `
+                    <tr>
+                      <td>${escapeHtml(r.etiqueta)}</td>
+                      <td>${fmt(r.qty, 0)}</td>
+                      <td>${escapeHtml(r.final)}</td>
+                      <td>${escapeHtml(r.cut)}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      drawSheet(plan, $("sheetCanvas"));
+    }
+
+    function drawSheet(plan, container) {
+      container.innerHTML = "";
+
+      const meta = document.createElement("div");
+      meta.textContent = `${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm`;
+      meta.style.position = "absolute";
+      meta.style.left = "10px";
+      meta.style.top = "10px";
+      meta.style.fontSize = "10px";
+      meta.style.color = "#64748b";
+      container.appendChild(meta);
+
+      plan.placements.forEach((p, idx) => {
+        const colors = [
+          ["#dbeafe","#93c5fd"],
+          ["#dcfce7","#86efac"],
+          ["#fef3c7","#fcd34d"],
+          ["#ede9fe","#c4b5fd"],
+          ["#ffe4e6","#fda4af"],
+          ["#cffafe","#67e8f9"]
+        ];
+        const c = colors[idx % colors.length];
+        const left = (p.x / plan.stock.ancho) * 100;
+        const top = (p.y / plan.stock.largo) * 100;
+        const width = (p.w / plan.stock.ancho) * 100;
+        const height = (p.h / plan.stock.largo) * 100;
+
+        const box = document.createElement("div");
+        box.className = "placement";
+        box.style.left = left + "%";
+        box.style.top = top + "%";
+        box.style.width = width + "%";
+        box.style.height = height + "%";
+        box.style.background = c[0];
+        box.style.borderColor = c[1];
+
+        const trim = shapeTrimPerSide(p.forma, p.trimEspecial);
+        const isOval = /ovalo|óvalo/i.test(String(p.forma || ""));
+        const isCircle = /circular|circulo|círculo/i.test(String(p.forma || ""));
+
+        if ((isOval || isCircle) && trim > 0) {
+          const inner = document.createElement("div");
+          inner.className = "shapeVisual";
+          inner.style.left = (trim / p.w * 100) + "%";
+          inner.style.top = (trim / p.h * 100) + "%";
+          inner.style.width = Math.max(0, (p.w - trim * 2) / p.w * 100) + "%";
+          inner.style.height = Math.max(0, (p.h - trim * 2) / p.h * 100) + "%";
+          inner.style.borderRadius = isCircle ? "999px" : "999px / 60%";
+          box.appendChild(inner);
+        }
+
+        const inner = document.createElement("div");
+        inner.className = "placementInner";
+        const text = document.createElement("div");
+        text.className = "placementText";
+        text.style.transform = p.h > p.w ? "rotate(-90deg)" : "none";
+        text.innerHTML = `
+          <div class="placementLabel">${escapeHtml(p.etiqueta)}</div>
+          <div class="placementSub">Final: ${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}</div>
+          <div class="placementSub">Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}</div>
+        `;
+        inner.appendChild(text);
+        box.appendChild(inner);
+        container.appendChild(box);
+      });
+    }
+
+    function updateNotices() {
+      const notices = [];
+
+      if (!state.connectionOk) {
+        notices.push("No hay conexión válida con el catálogo. Revisa el endpoint /api/getCatalogs.");
+      }
+
+      if (!state.selectedParts.length) {
+        notices.push("Aún no has agregado modelos para optimizar.");
+      }
+
+      if (!state.selectedSheets.length) {
+        notices.push("Aún no has agregado láminas para optimizar.");
+      }
+
+      const expandedParts = expandParts();
+
+      if (expandedParts.length && state.selectedSheets.length) {
+        const missingCompat = expandedParts.filter(p =>
+          !state.selectedSheets.some(s => s.material === p.material && String(s.espesor) === String(p.espesor))
+        );
+
+        if (missingCompat.length) {
+          const grouped = {};
+          missingCompat.forEach(p => {
+            const key = `${p.material}__${p.espesor}`;
+            grouped[key] = grouped[key] || { material: p.material, espesor: p.espesor, qty: 0 };
+            grouped[key].qty += 1;
+          });
+
+          Object.values(grouped).forEach(g => {
+            notices.push(`No hay lámina compatible cargada para ${g.material} ${g.espesor}mm. Piezas afectadas: ${g.qty}.`);
+          });
+        }
+
+        const stockGroups = {};
+        state.selectedSheets.forEach(s => {
+          const key = `${s.material}__${s.espesor}__${s.ancho}__${s.largo}`;
+          stockGroups[key] = stockGroups[key] || { ...s, total: 0 };
+          stockGroups[key].total += s.cantidad;
+        });
+
+        Object.values(stockGroups).forEach(g => {
+          const compatibleParts = expandedParts.filter(p => p.material === g.material && String(p.espesor) === String(g.espesor));
+          if (!compatibleParts.length) return;
+
+          const required = exactSheetsRequired(
+            compatibleParts,
+            { material: g.material, espesor: g.espesor, ancho: g.ancho, largo: g.largo }
+          );
+
+          if (!Number.isFinite(required)) {
+            notices.push(`La lámina ${g.ancho} × ${g.largo} mm de ${g.material} ${g.espesor}mm no alcanza en tamaño para al menos una pieza compatible.`);
+          } else if (g.total < required) {
+            notices.push(`Para ${g.material} ${g.espesor}mm en lámina ${g.ancho} × ${g.largo} mm, se requieren ${required} láminas en total. Actualmente tienes ${g.total}. Faltan ${required - g.total}.`);
+          }
+        });
+      }
+
+      if (state.summary.unplaced && state.summary.unplaced.length) {
+        notices.push(`Hay ${state.summary.unplaced.length} pieza(s) sin colocar después de optimizar.`);
+      }
+
+      if (!notices.length) {
+        setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
+      } else {
+        setStatus($("noticeBox"), notices.map(n => `• ${escapeHtml(n)}`).join("<br>"), notices.length > 2 ? "warn" : "warn");
+      }
+
+      syncKpis();
     }
 
     function notImplemented(actionName) {
-      setStatus($("persistenceStatus"), `${actionName} todavía no está conectado al backend nuevo. Primero validemos lectura de catálogos.`, "warn");
+      setStatus($("persistenceStatus"), `${actionName} todavía no está conectado al backend nuevo. Primero validamos lectura y optimización visual.`, "warn");
     }
 
     function openModal(id) { $(id).classList.add("show"); }
@@ -949,8 +1267,10 @@
 
     function bindEvents() {
       $("darkModeToggle").addEventListener("change", e => document.body.classList.toggle("dark", e.target.checked));
+
       $("refreshBtn").addEventListener("click", refreshCatalogs);
-      $("reconnectBtn").addEventListener("click", refreshCatalogs);
+      $("reconnectBtn")?.addEventListener("click", refreshCatalogs);
+      $("optimizeBtn").addEventListener("click", optimize);
 
       $("filterCliente").addEventListener("change", e => { state.filters.cliente = e.target.value; renderCatalogModelDatalist(); });
       $("filterMaterial").addEventListener("change", e => { state.filters.material = e.target.value; renderCatalogModelDatalist(); });
@@ -963,7 +1283,7 @@
 
       $("openManualModalBtn").addEventListener("click", () => openModal("manualModalBack"));
       $("closeManualModalBtn").addEventListener("click", () => closeModal("manualModalBack"));
-      $("addManualModelBtn").addEventListener("click", () => notImplemented("Guardar modelo manual"));
+      $("addManualModelBtn").addEventListener("click", addManualModel);
 
       $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
