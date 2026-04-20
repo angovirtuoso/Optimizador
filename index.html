@@ -221,58 +221,37 @@
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
     .print-only{display:none}
-    .page-break{break-before:page; page-break-before:always}
+    .print-fit-card{transform-origin:top left;width:100%}
 
     @media print {
       @page{
         size: letter portrait;
-        margin: 8mm;
+        margin: 5mm;
       }
 
       html, body{
         background:#fff !important;
         color:#000 !important;
+        margin:0 !important;
+        padding:0 !important;
         font-size:10px !important;
       }
 
-      .app{
-        max-width:none;
-        padding:0;
+      body *{
+        visibility:hidden !important;
       }
 
-      .topbar,
-      .grid > .stack:first-child,
-      .tabs,
-      .modalBack,
-      .chip,
-      #noticeBox,
-      .switchWrap,
-      #refreshBtn,
-      #optimizeBtn,
-      #printBtn,
-      #openLoadModalBtn,
-      #openSaveModalBtn{
-        display:none !important;
+      #printArea,
+      #printArea *{
+        visibility:visible !important;
       }
 
-      .grid,
-      .stack{
+      #printArea{
         display:block !important;
-      }
-
-      .card,.kpi,.sheetCard,.summaryCard,.tableWrap,.sheetViewport,.miniBox{
-        box-shadow:none !important;
-        background:#fff !important;
-        color:#000 !important;
-        border-color:#999 !important;
-      }
-
-      .kpis{
-        display:none !important;
-      }
-
-      #resultArea{
-        border:none !important;
+        position:absolute !important;
+        inset:0 !important;
+        width:100% !important;
+        margin:0 !important;
         padding:0 !important;
         background:#fff !important;
       }
@@ -282,12 +261,12 @@
       }
 
       .print-plan{
-        break-inside:avoid;
-        page-break-inside:avoid;
+        width:100% !important;
         break-after:page;
         page-break-after:always;
-        margin:0;
-        padding:0;
+        overflow:hidden !important;
+        margin:0 !important;
+        padding:0 !important;
       }
 
       .print-plan:last-child{
@@ -295,88 +274,124 @@
         page-break-after:auto;
       }
 
-      .print-plan .sheetCard{
-        padding:10px !important;
+      .topbar,
+      .grid,
+      .card,
+      .modalBack,
+      .chip,
+      .switchWrap,
+      #noticeBox,
+      #refreshBtn,
+      #optimizeBtn,
+      #printBtn,
+      #openLoadModalBtn,
+      #openSaveModalBtn{
+        display:none !important;
+      }
+
+      #printArea .sheetCard,
+      #printArea .summaryCard,
+      #printArea .miniBox,
+      #printArea .tableWrap,
+      #printArea .sheetViewport{
+        box-shadow:none !important;
+        background:#fff !important;
+        color:#000 !important;
+        border-color:#999 !important;
+      }
+
+      #printArea .sheetCard{
+        padding:6px !important;
         border:1px solid #999 !important;
-        border-radius:10px !important;
+        border-radius:8px !important;
       }
 
       .print-cover-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
-        gap:8px;
-        margin-bottom:8px;
+        gap:6px;
+        margin-bottom:6px;
       }
 
       .print-logo{
-        width:105px;
-        height:36px;
+        width:92px;
+        height:30px;
         object-fit:contain;
       }
 
       .print-small{
-        font-size:10px;
+        font-size:9px;
         color:#333;
-        line-height:1.25;
+        line-height:1.15;
       }
 
       .sheetTitle{
-        margin-bottom:6px !important;
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:8px;
+        margin-bottom:4px !important;
       }
 
       .sheetTitle h3{
-        font-size:16px !important;
+        font-size:14px !important;
         margin:0 !important;
+        line-height:1.05 !important;
       }
 
       .sheetSub{
-        font-size:10px !important;
+        font-size:9px !important;
+        line-height:1.1 !important;
       }
 
       .pill{
-        font-size:10px !important;
-        padding:6px 10px !important;
+        font-size:9px !important;
+        padding:4px 8px !important;
         border:1px solid #999 !important;
+        border-radius:999px !important;
       }
 
       .miniSummary{
         display:grid !important;
         grid-template-columns:repeat(4,1fr) !important;
-        gap:6px !important;
-        margin-bottom:8px !important;
+        gap:4px !important;
+        margin-bottom:6px !important;
       }
 
       .miniBox{
-        padding:6px !important;
+        padding:5px !important;
         border-radius:8px !important;
       }
 
       .miniBox .k{
-        font-size:9px !important;
+        font-size:8px !important;
+        line-height:1 !important;
       }
 
       .miniBox .v{
-        font-size:13px !important;
+        font-size:11px !important;
         margin-top:2px !important;
+        line-height:1.05 !important;
       }
 
       .sheetViewport{
-        padding:6px !important;
-        margin-bottom:8px !important;
-        border-radius:10px !important;
+        padding:4px !important;
+        margin-bottom:6px !important;
+        border-radius:8px !important;
       }
 
       .sheetCanvas{
         width:100% !important;
-        max-width:520px !important;
+        max-width:390px !important;
         aspect-ratio:0.72 !important;
         min-height:auto !important;
         height:auto !important;
         margin:0 auto !important;
         background:#fff !important;
         border:1px solid #999 !important;
-        border-radius:10px !important;
+        border-radius:8px !important;
+        overflow:hidden !important;
       }
 
       .resultLayout{
@@ -384,30 +399,38 @@
       }
 
       .summaryCard{
-        margin-top:8px !important;
-        padding:8px !important;
-        border-radius:10px !important;
+        margin-top:6px !important;
+        padding:6px !important;
+        border-radius:8px !important;
+      }
+
+      .print-section{
+        margin-top:6px !important;
+      }
+
+      .print-section h3{
+        margin:0 0 4px 0 !important;
+        font-size:10px !important;
+        line-height:1.05 !important;
       }
 
       .summaryCard table{
         table-layout:fixed;
         width:100%;
+        border-collapse:collapse !important;
       }
 
       .summaryCard th,
       .summaryCard td{
-        padding:5px 6px !important;
-        font-size:9px !important;
+        padding:4px 5px !important;
+        font-size:8px !important;
+        line-height:1.05 !important;
         word-break:break-word;
+        border-color:#bbb !important;
       }
 
-      .print-section{
-        margin-top:8px !important;
-      }
-
-      .print-section h3{
-        margin:0 0 6px 0 !important;
-        font-size:11px !important;
+      .summaryCard th{
+        background:#f5f5f5 !important;
       }
 
       .placement{
@@ -417,6 +440,10 @@
 
       .placementLabel{
         font-weight:700 !important;
+      }
+
+      .placementSub{
+        font-weight:400 !important;
       }
     }
 
@@ -1611,6 +1638,39 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
       syncKpis();
     }
 
+    function getPrintablePageHeightPx() {
+      const mmToPx = 96 / 25.4;
+      const pageHeightMm = 279.4;
+      const marginTopBottomMm = 10;
+      return (pageHeightMm - marginTopBottomMm) * mmToPx;
+    }
+
+    function fitPrintPagesToOneSheet() {
+      const pageHeightPx = getPrintablePageHeightPx();
+      const plans = document.querySelectorAll("#printArea .print-plan");
+
+      plans.forEach(plan => {
+        const card = plan.querySelector(".print-fit-card");
+        if (!card) return;
+
+        card.style.transform = "scale(1)";
+        card.style.transformOrigin = "top left";
+        plan.style.height = "auto";
+        plan.style.width = "100%";
+
+        const naturalHeight = card.scrollHeight;
+        const naturalWidth = card.scrollWidth;
+
+        const scale = Math.min(1, pageHeightPx / naturalHeight);
+
+        card.style.transform = `scale(${scale})`;
+        card.style.transformOrigin = "top left";
+
+        plan.style.height = `${naturalHeight * scale}px`;
+        plan.style.width = `${Math.max(naturalWidth * scale, 1)}px`;
+      });
+    }
+
     function buildPrintArea() {
       const root = $("printArea");
       const now = new Date();
@@ -1627,65 +1687,67 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
         wrapper.innerHTML = `
-          <div class="sheetCard">
-            <div class="print-cover-head">
-              <div>
-                <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
-              </div>
-              <div style="text-align:right">
-                <div><strong>PRODIESA OPTIMIZADOR</strong></div>
-                <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
-                <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
-                <div class="print-small">Nombre: ${escapeHtml(state.currentOptimizationName || "—")}</div>
-                <div class="print-small">Lámina / Patrón: ${idx + 1}</div>
-              </div>
-            </div>
-
-            <div class="sheetTitle">
-              <div>
-                <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm</h3>
-                <div class="sheetSub">
-                  Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm
-                  ${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}
+          <div class="print-fit-card">
+            <div class="sheetCard">
+              <div class="print-cover-head">
+                <div>
+                  <img class="print-logo" src="/prodiesa-logo.png" alt="Prodiesa" />
+                </div>
+                <div style="text-align:right">
+                  <div><strong>PRODIESA OPTIMIZADOR</strong></div>
+                  <div class="print-small">Fecha: ${escapeHtml(dateStr)}</div>
+                  <div class="print-small">Folio: ${escapeHtml(state.currentFolio || "—")}</div>
+                  <div class="print-small">Nombre: ${escapeHtml(state.currentOptimizationName || "—")}</div>
+                  <div class="print-small">Lámina / Patrón: ${idx + 1}</div>
                 </div>
               </div>
-              <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
-            </div>
 
-            <div class="miniSummary">
-              <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
-              <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
-              <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
-              <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
-            </div>
+              <div class="sheetTitle">
+                <div>
+                  <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm</h3>
+                  <div class="sheetSub">
+                    Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm
+                    ${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}
+                  </div>
+                </div>
+                <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
+              </div>
 
-            <div class="sheetViewport">
-              <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
-            </div>
+              <div class="miniSummary">
+                <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
+                <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
+                <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
+                <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
+              </div>
 
-            <div class="print-section">
-              <h3>Desglose de modelos en esta lámina</h3>
-              <div class="tableWrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th style="width:44%">Modelo</th>
-                      <th style="width:12%">Cant.</th>
-                      <th style="width:22%">Medida final</th>
-                      <th style="width:22%">Medida corte</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${modelSummary.map(r => `
+              <div class="sheetViewport">
+                <div class="sheetCanvas" id="printSheetCanvas_${idx}"></div>
+              </div>
+
+              <div class="print-section">
+                <h3>Desglose de modelos en esta lámina</h3>
+                <div class="tableWrap">
+                  <table>
+                    <thead>
                       <tr>
-                        <td>${escapeHtml(r.etiqueta)}</td>
-                        <td>${fmt(r.qty, 0)}</td>
-                        <td>${escapeHtml(r.final)}</td>
-                        <td>${escapeHtml(r.cut)}</td>
+                        <th style="width:44%">Modelo</th>
+                        <th style="width:12%">Cant.</th>
+                        <th style="width:22%">Medida final</th>
+                        <th style="width:22%">Medida corte</th>
                       </tr>
-                    `).join("")}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      ${modelSummary.map(r => `
+                        <tr>
+                          <td>${escapeHtml(r.etiqueta)}</td>
+                          <td>${fmt(r.qty, 0)}</td>
+                          <td>${escapeHtml(r.final)}</td>
+                          <td>${escapeHtml(r.cut)}</td>
+                        </tr>
+                      `).join("")}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -1694,6 +1756,10 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         root.appendChild(wrapper);
         drawSheet(plan, root.querySelector(`#printSheetCanvas_${idx}`));
       });
+
+      requestAnimationFrame(() => {
+        fitPrintPagesToOneSheet();
+      });
     }
 
     function doPrint() {
@@ -1701,8 +1767,15 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         setStatus($("noticeBox"), "Primero debes optimizar para poder imprimir o guardar PDF.", "warn");
         return;
       }
+
       buildPrintArea();
-      window.print();
+
+      setTimeout(() => {
+        fitPrintPagesToOneSheet();
+        setTimeout(() => {
+          window.print();
+        }, 120);
+      }, 120);
     }
 
     async function saveOptimization() {
