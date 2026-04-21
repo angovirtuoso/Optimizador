@@ -220,8 +220,6 @@
     }
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
-    .print-only{display:none}
-
     @media (max-width:1280px){
       .grid{grid-template-columns:1fr}
       .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr 1fr}
@@ -598,6 +596,38 @@
       return 0;
     }
 
+    function autoSuggestManualCutSizes() {
+      const forma = String($("manualForma").value || "").toLowerCase();
+      const anchoFinal = num($("manualAnchoFinal").value);
+      const largoFinal = num($("manualLargoFinal").value);
+
+      if (!(anchoFinal > 0) || !(largoFinal > 0)) return;
+
+      let desbaste = 0;
+      let trim = 0;
+
+      if (forma.includes("rect")) {
+        desbaste = 2;
+        trim = 0;
+      } else if (forma.includes("circ")) {
+        desbaste = 4;
+        trim = 17;
+      } else if (forma.includes("oval") || forma.includes("óval")) {
+        desbaste = 4;
+        trim = 17;
+      } else if (forma.includes("esq")) {
+        desbaste = 2;
+        trim = 17;
+      } else {
+        desbaste = 2;
+        trim = 0;
+      }
+
+      $("manualTrimEspecial").value = trim;
+      $("manualAnchoCorte").value = Math.round((anchoFinal + desbaste) * 100) / 100;
+      $("manualLargoCorte").value = Math.round((largoFinal + desbaste) * 100) / 100;
+    }
+
     function currentFilteredModels() {
       const q = String($("catalogModelSearch").value || "").trim().toLowerCase();
       return state.catalogs.modelos.filter(m => {
@@ -657,6 +687,8 @@
         $("sheetAncho").value = num(defaultSheet.Ancho);
         $("sheetLargo").value = num(defaultSheet.Largo);
       }
+
+      autoSuggestManualCutSizes();
     }
 
     function renderPartsTable() {
@@ -846,6 +878,7 @@
       $("manualTrimEspecial").value = "0";
       $("manualQty").value = "1";
       $("manualNotas").value = "";
+      autoSuggestManualCutSizes();
     }
 
     function addSheet() {
@@ -1816,9 +1849,16 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
       $("addCatalogModelBtn").addEventListener("click", addCatalogModel);
       $("addSheetBtn").addEventListener("click", addSheet);
 
-      $("openManualModalBtn").addEventListener("click", () => openModal("manualModalBack"));
+      $("openManualModalBtn").addEventListener("click", () => {
+        openModal("manualModalBack");
+        setTimeout(autoSuggestManualCutSizes, 0);
+      });
       $("closeManualModalBtn").addEventListener("click", () => closeModal("manualModalBack"));
       $("addManualModelBtn").addEventListener("click", addManualModel);
+
+      $("manualForma").addEventListener("change", autoSuggestManualCutSizes);
+      $("manualAnchoFinal").addEventListener("input", autoSuggestManualCutSizes);
+      $("manualLargoFinal").addEventListener("input", autoSuggestManualCutSizes);
 
       $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
