@@ -179,7 +179,7 @@
     body.dark .sheetCanvas{background:#0b1220;border-color:#334155}
 
     .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px}
-    .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:4px;text-align:center;line-height:1.12}
+    .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:4px;text-align:center;line-height:1.12;z-index:2}
     .placementText{
       width:100%;
       max-width:100%;
@@ -595,7 +595,16 @@
       if (num(explicit) > 0) return num(explicit);
       const s = String(shape || "").toLowerCase();
       if (s.includes("ovalo") || s.includes("óvalo") || s.includes("circular") || s.includes("circulo") || s.includes("círculo")) return OVAL_CIRCLE_TRIM_PER_SIDE;
+      if (s.includes("esq")) return 17;
       return 0;
+    }
+
+    function getShapeKind(shape) {
+      const s = String(shape || "").toLowerCase();
+      if (s.includes("circ")) return "circle";
+      if (s.includes("oval") || s.includes("óval")) return "oval";
+      if (s.includes("esq")) return "rounded";
+      return "rect";
     }
 
     function autoSuggestManualCutSizes() {
@@ -1297,18 +1306,46 @@
         box.style.borderColor = c[1];
 
         const trim = shapeTrimPerSide(p.forma, p.trimEspecial);
-        const isOval = /ovalo|óvalo/i.test(String(p.forma || ""));
-        const isCircle = /circular|circulo|círculo/i.test(String(p.forma || ""));
+        const shapeKind = getShapeKind(p.forma);
 
-        if ((isOval || isCircle) && trim > 0) {
-          const innerShape = document.createElement("div");
-          innerShape.className = "shapeVisual";
-          innerShape.style.left = (trim / p.w * 100) + "%";
-          innerShape.style.top = (trim / p.h * 100) + "%";
-          innerShape.style.width = Math.max(0, (p.w - trim * 2) / p.w * 100) + "%";
-          innerShape.style.height = Math.max(0, (p.h - trim * 2) / p.h * 100) + "%";
-          innerShape.style.borderRadius = isCircle ? "999px" : "999px / 60%";
-          box.appendChild(innerShape);
+        if (trim > 0 && shapeKind !== "rect") {
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("viewBox", `0 0 ${p.w} ${p.h}`);
+          svg.setAttribute("preserveAspectRatio", "none");
+          svg.style.position = "absolute";
+          svg.style.left = "0";
+          svg.style.top = "0";
+          svg.style.width = "100%";
+          svg.style.height = "100%";
+          svg.style.pointerEvents = "none";
+          svg.style.zIndex = "1";
+
+          if (shapeKind === "circle" || shapeKind === "oval") {
+            const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            ellipse.setAttribute("cx", p.w / 2);
+            ellipse.setAttribute("cy", p.h / 2);
+            ellipse.setAttribute("rx", Math.max(1, (p.w / 2) - trim));
+            ellipse.setAttribute("ry", Math.max(1, (p.h / 2) - trim));
+            ellipse.setAttribute("fill", "none");
+            ellipse.setAttribute("stroke", "rgba(15,23,42,.55)");
+            ellipse.setAttribute("stroke-width", "1.2");
+            svg.appendChild(ellipse);
+          } else if (shapeKind === "rounded") {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const rx = Math.max(8, Math.min(p.w, p.h) * 0.12);
+            rect.setAttribute("x", trim);
+            rect.setAttribute("y", trim);
+            rect.setAttribute("width", Math.max(1, p.w - trim * 2));
+            rect.setAttribute("height", Math.max(1, p.h - trim * 2));
+            rect.setAttribute("rx", rx);
+            rect.setAttribute("ry", rx);
+            rect.setAttribute("fill", "none");
+            rect.setAttribute("stroke", "rgba(15,23,42,.55)");
+            rect.setAttribute("stroke-width", "1.2");
+            svg.appendChild(rect);
+          }
+
+          box.appendChild(svg);
         }
 
         const inner = document.createElement("div");
@@ -1468,12 +1505,54 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         const fontSub = Math.max(3.2, fontMain * 0.88);
         const cx = x + w / 2;
         const cy = y + h / 2;
-
         const rotate = h > w ? `transform="rotate(-90 ${cx} ${cy})"` : "";
+
+        const trim = shapeTrimPerSide(p.forma, p.trimEspecial);
+        const shapeKind = getShapeKind(p.forma);
+
+        let innerShapeSvg = "";
+        if (trim > 0 && shapeKind !== "rect") {
+          if (shapeKind === "circle" || shapeKind === "oval") {
+            innerShapeSvg = `
+              <ellipse
+                cx="${x + w / 2}"
+                cy="${y + h / 2}"
+                rx="${Math.max(1, (w / 2) - ((trim / p.w) * w))}"
+                ry="${Math.max(1, (h / 2) - ((trim / p.h) * h))}"
+                fill="none"
+                stroke="#0f172a"
+                stroke-opacity="0.55"
+                stroke-width="1"
+              />
+            `;
+          } else if (shapeKind === "rounded") {
+            const insetX = (trim / p.w) * w;
+            const insetY = (trim / p.h) * h;
+            const innerW = Math.max(1, w - insetX * 2);
+            const innerH = Math.max(1, h - insetY * 2);
+            const rx = Math.max(6, Math.min(innerW, innerH) * 0.12);
+
+            innerShapeSvg = `
+              <rect
+                x="${x + insetX}"
+                y="${y + insetY}"
+                width="${innerW}"
+                height="${innerH}"
+                rx="${rx}"
+                ry="${rx}"
+                fill="none"
+                stroke="#0f172a"
+                stroke-opacity="0.55"
+                stroke-width="1"
+              />
+            `;
+          }
+        }
 
         return `
           <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" ry="3"
             fill="${c[0]}" stroke="${c[1]}" stroke-width="1"/>
+          ${innerShapeSvg}
           <g ${rotate}>
             <text x="${cx}" y="${cy - fontMain}" text-anchor="middle"
               font-size="${fontMain}" font-weight="700" fill="#0f172a">${label}</text>
