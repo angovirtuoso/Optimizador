@@ -1653,6 +1653,32 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         const modelSummary = summarizePlanModels(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
+        const globalSummaryHtml = `
+          <div class="globalSummaryTitle">Resumen global de la optimización</div>
+          <div class="globalSummary">
+            <div class="gBox">
+              <div class="gK">Aprovechamiento global cargado</div>
+              <div class="gV">${fmt(state.summary.yieldLoaded || 0, 1)}%</div>
+            </div>
+            <div class="gBox">
+              <div class="gK">Aprovechamiento global usado</div>
+              <div class="gV">${fmt(state.summary.usedYield || 0, 1)}%</div>
+            </div>
+            <div class="gBox">
+              <div class="gK">Láminas usadas</div>
+              <div class="gV">${fmt(state.summary.usedSheets || 0, 0)}</div>
+            </div>
+            <div class="gBox">
+              <div class="gK">Piezas colocadas</div>
+              <div class="gV">${fmt(state.summary.placedParts || 0, 0)}</div>
+            </div>
+            <div class="gBox">
+              <div class="gK">Desperdicio total</div>
+              <div class="gV">${fmtM2(state.summary.waste || 0)}</div>
+            </div>
+          </div>
+        `;
+
         return `
           <section class="print-page">
             <div class="sheetCard">
@@ -1668,6 +1694,8 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                   <div class="print-small">Lámina / Patrón: ${idx + 1}</div>
                 </div>
               </div>
+
+              ${globalSummaryHtml}
 
               <div class="sheetTitle">
                 <div>
@@ -1798,6 +1826,36 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
             .pill.red { background: #fee2e2; color: #b91c1c; }
             .pill.yellow { background: #fef3c7; color: #a16207; }
             .pill.green { background: #dcfce7; color: #15803d; }
+
+            .globalSummaryTitle{
+              font-size: 9px;
+              font-weight: 700;
+              margin-bottom: 4px;
+            }
+            .globalSummary{
+              display:grid;
+              grid-template-columns:repeat(5,1fr);
+              gap:4px;
+              margin-bottom:6px;
+            }
+            .gBox{
+              border:1px solid #999;
+              border-radius:8px;
+              padding:5px;
+              text-align:center;
+              background:#f8fafc;
+            }
+            .gK{
+              font-size:8px;
+              line-height:1;
+              color:#555;
+            }
+            .gV{
+              font-size:11px;
+              margin-top:2px;
+              line-height:1.05;
+              font-weight:700;
+            }
 
             .miniSummary {
               display: grid;
