@@ -227,14 +227,102 @@
     }
     .modalFooter{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
 
+    /* compactación modelos / láminas */
+    #catalogoCard,
+    #laminasCard{
+      padding:16px 16px 14px;
+    }
+
+    .modelos-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .modelos-grid-top{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .modelos-grid-mid{
+      display:grid;
+      grid-template-columns:minmax(0,1.6fr) minmax(140px,220px);
+      gap:10px;
+      margin-bottom:10px;
+      align-items:end;
+    }
+
+    .modelo-field-wide,
+    .modelo-field-small{
+      min-width:0;
+    }
+
+    .modelo-detalle-box{
+      width:100%;
+      background:#e8f5ef;
+      border:1px solid #c8e3d5;
+      border-radius:18px;
+      padding:14px 16px;
+      color:#0f766e;
+      line-height:1.45;
+      margin:0 0 10px 0;
+    }
+
+    body.dark .modelo-detalle-box{
+      background:#052e2b;
+      border-color:#134e4a;
+      color:#99f6e4;
+    }
+
+    .modelos-actions{
+      display:flex;
+      justify-content:flex-start;
+    }
+
+    #catalogoCard .lab,
+    #laminasCard .lab{
+      margin-bottom:6px;
+    }
+
+    #catalogoCard input,
+    #catalogoCard select,
+    #laminasCard input,
+    #laminasCard select{
+      min-height:44px;
+      height:44px;
+      padding:10px 14px;
+    }
+
     @media (max-width:1280px){
       .grid{grid-template-columns:1fr}
       .row5,.row4,.row3,.row2,.kpis{grid-template-columns:1fr 1fr}
       .resultLayout{grid-template-columns:1fr}
     }
+
+    @media (max-width:1100px){
+      .modelos-grid-top{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+
+      .modelos-grid-mid{
+        grid-template-columns:1fr;
+      }
+    }
+
     @media (max-width:760px){
       .row5,.row4,.row3,.row2,.kpis,.miniSummary{grid-template-columns:1fr}
       .sheetCanvas{min-height:520px}
+    }
+
+    @media (max-width:700px){
+      .modelos-grid-top{
+        grid-template-columns:1fr;
+      }
     }
   </style>
 </head>
@@ -279,42 +367,8 @@
 
     <div class="grid">
       <div class="stack">
-        <div class="card">
-          <div class="sectionHead">
-            <div>
-              <h2>Catálogo de modelos</h2>
-              <div class="subtle">Busca modelos oficiales y agrégalos al optimizador</div>
-            </div>
-            <button id="addCatalogModelBtn">Agregar a optimizador</button>
-          </div>
-
-          <div class="row4" style="margin-bottom:10px">
-            <label><span class="lab">Cliente</span><select id="filterCliente"></select></label>
-            <label><span class="lab">Material</span><select id="filterMaterial"></select></label>
-            <label><span class="lab">Espesor</span><select id="filterEspesor"></select></label>
-            <label><span class="lab">Forma</span><select id="filterForma"></select></label>
-          </div>
-
-          <div class="row3">
-            <label>
-              <span class="lab">Modelo - Cliente</span>
-              <input id="catalogModelSearch" list="catalogModelList" placeholder="Busca por modelo o cliente" />
-              <datalist id="catalogModelList"></datalist>
-            </label>
-            <label>
-              <span class="lab">Cantidad</span>
-              <input id="catalogModelQty" type="number" min="1" value="1" />
-            </label>
-            <div id="catalogModelPreview" class="status">Selecciona un modelo.</div>
-          </div>
-
-          <div style="margin-top:12px">
-            <button id="openManualModalBtn">Registrar nuevo modelo</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sectionHead">
+        <section class="card" id="laminasCard">
+          <div class="sectionHead modelos-head">
             <div>
               <h2>Láminas</h2>
               <div class="subtle">Captura las láminas disponibles para optimizar</div>
@@ -344,7 +398,64 @@
               <tbody id="sheetsTbody"></tbody>
             </table>
           </div>
-        </div>
+        </section>
+
+        <section class="card" id="catalogoCard">
+          <div class="sectionHead modelos-head">
+            <div>
+              <h2>Modelos</h2>
+              <div class="subtle">Busca modelos oficiales y agrégalos al optimizador</div>
+            </div>
+            <button id="addCatalogModelBtn">Agregar a optimizador</button>
+          </div>
+
+          <div class="modelos-grid-top">
+            <label>
+              <span class="lab">Cliente</span>
+              <select id="filterCliente"></select>
+            </label>
+
+            <label>
+              <span class="lab">Material</span>
+              <select id="filterMaterial"></select>
+            </label>
+
+            <label>
+              <span class="lab">Espesor</span>
+              <select id="filterEspesor"></select>
+            </label>
+
+            <label>
+              <span class="lab">Forma</span>
+              <select id="filterForma"></select>
+            </label>
+          </div>
+
+          <div class="modelos-grid-mid">
+            <label class="modelo-field-wide">
+              <span class="lab">Modelo - Cliente</span>
+              <input id="catalogModelSearch" list="catalogModelList" placeholder="Busca por modelo o cliente" />
+              <datalist id="catalogModelList"></datalist>
+            </label>
+
+            <label class="modelo-field-small">
+              <span class="lab">Cantidad</span>
+              <input id="catalogModelQty" type="number" min="1" value="1" />
+            </label>
+          </div>
+
+          <div id="catalogModelPreview" class="modelo-detalle-box">
+            <strong>Material:</strong> —<br>
+            <strong>Forma:</strong> —<br>
+            <strong>Medida final:</strong> —<br>
+            <strong>Medida corte:</strong> —<br>
+            <strong>Acabado:</strong> —
+          </div>
+
+          <div class="modelos-actions">
+            <button id="openManualModalBtn">Registrar nuevo modelo</button>
+          </div>
+        </section>
 
         <div class="card">
           <div class="sectionHead">
@@ -414,15 +525,18 @@
       <div class="row4" style="margin-top:10px">
         <label><span class="lab">Forma</span><select id="manualForma"></select></label>
         <label><span class="lab">Acabado</span><select id="manualAcabado"></select></label>
-
-        <label style="display:flex;align-items:end;">
-          <span style="display:flex;align-items:center;gap:8px;min-height:40px;">
-            <input id="manualUseInches" type="checkbox" style="width:auto;min-height:auto;" />
-            <span class="lab" style="margin:0;color:var(--text)">Medida capturada en inches</span>
-          </span>
+        <label>
+          <span class="lab">Unidad de captura</span>
+          <select id="manualUnit">
+            <option value="mm">mm</option>
+            <option value="in">in</option>
+            <option value="ft">ft</option>
+            <option value="cm">cm</option>
+          </select>
         </label>
-
-        <div></div>
+        <div id="manualConversionNotice" class="status" style="display:none;">
+          Se mostrará la conversión automática a mm.
+        </div>
       </div>
 
       <div class="row4" style="margin-top:10px">
@@ -434,12 +548,12 @@
           <span class="lab" id="manualLargoInputLabel">Largo capturado mm</span>
           <input id="manualLargoInput" type="number" step="0.01" />
         </label>
-        <label>
-          <span class="lab">Ancho final mm</span>
+        <label id="manualAnchoFinalWrap" style="display:none;">
+          <span class="lab">Ancho (conversión a mm)</span>
           <input id="manualAnchoFinal" type="number" step="0.01" />
         </label>
-        <label>
-          <span class="lab">Largo final mm</span>
+        <label id="manualLargoFinalWrap" style="display:none;">
+          <span class="lab">Largo (conversión a mm)</span>
           <input id="manualLargoFinal" type="number" step="0.01" />
         </label>
       </div>
@@ -647,18 +761,13 @@
       }
 
       const res = await fetch(url, options);
-
       let data;
       try {
         data = await res.json();
       } catch {
         throw new Error("Respuesta inválida del servicio");
       }
-
-      if (!data.ok) {
-        throw new Error(data.error || "Error del servicio");
-      }
-
+      if (!data.ok) throw new Error(data.error || "Error del servicio");
       return data;
     }
 
@@ -678,40 +787,54 @@
       return "rect";
     }
 
-    function inchesToMm(v) {
-      return num(v) * 25.4;
+    function convertToMm(value, unit) {
+      const v = num(value);
+      if (unit === "in") return v * 25.4;
+      if (unit === "ft") return v * 304.8;
+      if (unit === "cm") return v * 10;
+      return v;
+    }
+
+    function convertFromMm(valueMm, unit) {
+      const v = num(valueMm);
+      if (unit === "in") return v / 25.4;
+      if (unit === "ft") return v / 304.8;
+      if (unit === "cm") return v / 10;
+      return v;
     }
 
     function syncManualUnitLabels() {
-      const useInches = $("manualUseInches")?.checked;
-      $("manualAnchoInputLabel").textContent = useInches ? "Ancho capturado in" : "Ancho capturado mm";
-      $("manualLargoInputLabel").textContent = useInches ? "Largo capturado in" : "Largo capturado mm";
+      const unit = $("manualUnit")?.value || "mm";
+      $("manualAnchoInputLabel").textContent = `Ancho capturado ${unit}`;
+      $("manualLargoInputLabel").textContent = `Largo capturado ${unit}`;
+
+      const showConversion = unit !== "mm";
+      $("manualAnchoFinalWrap").style.display = showConversion ? "" : "none";
+      $("manualLargoFinalWrap").style.display = showConversion ? "" : "none";
+      $("manualConversionNotice").style.display = showConversion ? "" : "none";
     }
 
     function syncManualDimensionsToMm() {
-      const useInches = $("manualUseInches")?.checked;
+      const unit = $("manualUnit")?.value || "mm";
       const anchoInput = num($("manualAnchoInput")?.value);
       const largoInput = num($("manualLargoInput")?.value);
 
-      const anchoMm = useInches ? inchesToMm(anchoInput) : anchoInput;
-      const largoMm = useInches ? inchesToMm(largoInput) : largoInput;
+      const anchoMm = convertToMm(anchoInput, unit);
+      const largoMm = convertToMm(largoInput, unit);
 
-      if (anchoMm > 0) $("manualAnchoFinal").value = Math.round(anchoMm * 100) / 100;
-      else $("manualAnchoFinal").value = "";
-
-      if (largoMm > 0) $("manualLargoFinal").value = Math.round(largoMm * 100) / 100;
-      else $("manualLargoFinal").value = "";
+      $("manualAnchoFinal").value = anchoMm > 0 ? Math.round(anchoMm * 100) / 100 : "";
+      $("manualLargoFinal").value = largoMm > 0 ? Math.round(largoMm * 100) / 100 : "";
 
       autoSuggestManualCutSizes();
     }
 
     function syncManualInputFromFinals() {
-      const useInches = $("manualUseInches")?.checked;
+      const unit = $("manualUnit")?.value || "mm";
       const anchoFinal = num($("manualAnchoFinal")?.value);
       const largoFinal = num($("manualLargoFinal")?.value);
 
-      const anchoShown = useInches ? (anchoFinal / 25.4) : anchoFinal;
-      const largoShown = useInches ? (largoFinal / 25.4) : largoFinal;
+      const anchoShown = convertFromMm(anchoFinal, unit);
+      const largoShown = convertFromMm(largoFinal, unit);
 
       $("manualAnchoInput").value = anchoShown > 0 ? Math.round(anchoShown * 100) / 100 : "";
       $("manualLargoInput").value = largoShown > 0 ? Math.round(largoShown * 100) / 100 : "";
@@ -719,8 +842,16 @@
 
     function autoSuggestManualCutSizes() {
       const forma = String($("manualForma").value || "").toLowerCase();
-      const anchoFinal = num($("manualAnchoFinal").value);
-      const largoFinal = num($("manualLargoFinal").value);
+
+      let anchoFinal = num($("manualAnchoFinal").value);
+      let largoFinal = num($("manualLargoFinal").value);
+
+      if (($("manualUnit")?.value || "mm") === "mm") {
+        anchoFinal = num($("manualAnchoInput").value);
+        largoFinal = num($("manualLargoInput").value);
+        $("manualAnchoFinal").value = anchoFinal > 0 ? anchoFinal : "";
+        $("manualLargoFinal").value = largoFinal > 0 ? largoFinal : "";
+      }
 
       if (!(anchoFinal > 0) || !(largoFinal > 0)) return;
 
@@ -790,17 +921,23 @@
       );
 
       if (!selected) {
-        setStatus($("catalogModelPreview"), "Selecciona un modelo.");
+        $("catalogModelPreview").innerHTML = `
+          <strong>Material:</strong> —<br>
+          <strong>Forma:</strong> —<br>
+          <strong>Medida final:</strong> —<br>
+          <strong>Medida corte:</strong> —<br>
+          <strong>Acabado:</strong> —
+        `;
         return;
       }
 
-      setStatus($("catalogModelPreview"), `
-        <div><b>Material:</b> ${escapeHtml(selected.Material)} ${escapeHtml(selected.Espesor)}</div>
-        <div><b>Forma:</b> ${escapeHtml(selected.Forma)}</div>
-        <div><b>Medida final:</b> ${fmt(selected.Ancho_Final)} × ${fmt(selected.Largo_Final)} mm</div>
-        <div><b>Medida corte:</b> ${fmt(selected.Ancho_Corte)} × ${fmt(selected.Largo_Corte)} mm</div>
-        <div><b>Acabado:</b> ${escapeHtml(selected.Acabado || "-")}</div>
-      `, "ok");
+      $("catalogModelPreview").innerHTML = `
+        <strong>Material:</strong> ${escapeHtml(selected.Material)} ${escapeHtml(selected.Espesor)}<br>
+        <strong>Forma:</strong> ${escapeHtml(selected.Forma)}<br>
+        <strong>Medida final:</strong> ${fmt(selected.Ancho_Final)} × ${fmt(selected.Largo_Final)} mm<br>
+        <strong>Medida corte:</strong> ${fmt(selected.Ancho_Corte)} × ${fmt(selected.Largo_Corte)} mm<br>
+        <strong>Acabado:</strong> ${escapeHtml(selected.Acabado || "-")}
+      `;
     }
 
     function renderSelectors() {
@@ -876,7 +1013,6 @@
       if (!part) return;
 
       fillEditPartSelectors();
-
       $("editPartId").value = part.id;
       $("editEtiqueta").value = part.etiqueta || "";
       $("editMaterial").value = part.material || "";
@@ -925,7 +1061,6 @@
       }
 
       state.selectedParts[idx] = updated;
-
       closeModal("editPartModalBack");
       renderPartsTable();
       updateNotices();
@@ -937,7 +1072,6 @@
       if (!id) return;
 
       state.selectedParts = state.selectedParts.filter(p => p.id !== id);
-
       closeModal("editPartModalBack");
       renderPartsTable();
       updateNotices();
@@ -1093,7 +1227,7 @@
       $("manualTrimEspecial").value = "0";
       $("manualQty").value = "1";
       $("manualNotas").value = "";
-      $("manualUseInches").checked = false;
+      $("manualUnit").value = "mm";
       syncManualUnitLabels();
       autoSuggestManualCutSizes();
     }
@@ -1446,14 +1580,8 @@
       let best = minFont;
 
       function applySize(size) {
-        if (label) {
-          label.style.fontSize = `${size}px`;
-          label.style.lineHeight = "1.02";
-        }
-        subs.forEach(sub => {
-          sub.style.fontSize = `${Math.max(size * 0.9, 3.6)}px`;
-          sub.style.lineHeight = "1.02";
-        });
+        if (label) label.style.fontSize = `${size}px`;
+        subs.forEach(sub => sub.style.fontSize = `${Math.max(size * 0.9, 3.6)}px`);
       }
 
       for (let i = 0; i < 20; i++) {
@@ -1561,9 +1689,7 @@
         text.className = "placementText";
 
         const isVertical = p.h > p.w;
-        if (isVertical) {
-          text.style.transform = "rotate(-90deg)";
-        }
+        if (isVertical) text.style.transform = "rotate(-90deg)";
 
         text.style.width = "calc(100% - 6px)";
         text.style.maxWidth = "calc(100% - 6px)";
@@ -1584,9 +1710,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         box.appendChild(inner);
         container.appendChild(box);
 
-        requestAnimationFrame(() => {
-          fitPlacementText(text, box, isVertical);
-        });
+        requestAnimationFrame(() => fitPlacementText(text, box, isVertical));
       });
     }
 
@@ -2208,10 +2332,10 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
       $("manualForma").addEventListener("change", autoSuggestManualCutSizes);
       $("manualAnchoFinal").addEventListener("input", autoSuggestManualCutSizes);
       $("manualLargoFinal").addEventListener("input", autoSuggestManualCutSizes);
-
-      $("manualUseInches").addEventListener("change", () => {
+      $("manualUnit").addEventListener("change", () => {
         syncManualUnitLabels();
         syncManualInputFromFinals();
+        syncManualDimensionsToMm();
       });
       $("manualAnchoInput").addEventListener("input", syncManualDimensionsToMm);
       $("manualLargoInput").addEventListener("input", syncManualDimensionsToMm);
