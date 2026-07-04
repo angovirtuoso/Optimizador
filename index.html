@@ -184,45 +184,37 @@
     }
     body.dark .sheetCanvas{background:#0b1220;border-color:#334155}
 
+    .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px}
     .wasteRect{
       position:absolute;
       overflow:hidden;
-      border:1px dashed rgba(100,116,139,.62);
-      background:rgba(248,250,252,.72);
-      border-radius:4px;
-      z-index:0;
-      pointer-events:auto;
-    }
-    .wasteRect.aprovechable{
-      border-color:rgba(180,83,9,.85);
-      background:rgba(255,247,237,.78);
-    }
-    body.dark .wasteRect{
-      background:rgba(15,23,42,.72);
-      border-color:rgba(148,163,184,.65);
-    }
-    body.dark .wasteRect.aprovechable{
-      background:rgba(42,31,6,.72);
-      border-color:rgba(251,191,36,.85);
-    }
-    .wasteInner{
-      position:absolute;
-      inset:0;
+      border:1.5px dashed #94a3b8;
+      background:rgba(248,250,252,.88);
+      border-radius:5px;
       display:grid;
       place-items:center;
-      padding:2px;
       text-align:center;
       color:#475569;
-      line-height:1.05;
       font-weight:700;
+      line-height:1.08;
+      padding:2px;
+      z-index:1;
     }
-    .wasteRect.aprovechable .wasteInner{color:#92400e}
-    body.dark .wasteInner{color:#cbd5e1}
-    body.dark .wasteRect.aprovechable .wasteInner{color:#fbbf24}
-    .wasteLabel{font-size:10px}
-    .wasteMeta{font-size:8px;font-weight:500;margin-top:1px}
-
-    .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px;z-index:1}
+    .wasteRect.aprovechable{
+      border-color:#f59e0b;
+      background:rgba(255,247,237,.92);
+      color:#92400e;
+    }
+    .wasteText{
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      font-size:11px;
+    }
+    .wasteText small{display:block;font-size:9px;font-weight:600;margin-top:1px}
     .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:4px;text-align:center;line-height:1.12;z-index:2}
     .placementText{
       width:100%;
@@ -1308,93 +1300,7 @@
       );
     }
 
-    function makeSheet(stock) {
-      return { stock, freeRects: [{ x: 0, y: 0, w: stock.ancho, h: stock.largo }], placements: [] };
-    }
-
-    function rectsIntersect(a, b) {
-      return !(
-        b.x >= a.x + a.w ||
-        b.x + b.w <= a.x ||
-        b.y >= a.y + a.h ||
-        b.y + b.h <= a.y
-      );
-    }
-
-    function rectContains(a, b) {
-      return (
-        b.x >= a.x &&
-        b.y >= a.y &&
-        b.x + b.w <= a.x + a.w &&
-        b.y + b.h <= a.y + a.h
-      );
-    }
-
-    function cleanRect(rect) {
-      return {
-        x: Math.round(num(rect.x) * 1000) / 1000,
-        y: Math.round(num(rect.y) * 1000) / 1000,
-        w: Math.round(num(rect.w) * 1000) / 1000,
-        h: Math.round(num(rect.h) * 1000) / 1000
-      };
-    }
-
-    function pruneFreeRects(rects) {
-      const minSide = 0.5;
-      const cleaned = rects
-        .map(cleanRect)
-        .filter(r => r.w > minSide && r.h > minSide);
-
-      const unique = [];
-      const seen = new Set();
-      cleaned.forEach(r => {
-        const key = `${r.x}|${r.y}|${r.w}|${r.h}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          unique.push(r);
-        }
-      });
-
-      return unique.filter((a, i) =>
-        !unique.some((b, j) => i !== j && rectContains(b, a))
-      );
-    }
-
-    function splitFreeRect(free, used) {
-      if (!rectsIntersect(free, used)) return [free];
-
-      const out = [];
-
-      if (used.x > free.x) {
-        out.push({ x: free.x, y: free.y, w: used.x - free.x, h: free.h });
-      }
-
-      if (used.x + used.w < free.x + free.w) {
-        out.push({
-          x: used.x + used.w,
-          y: free.y,
-          w: (free.x + free.w) - (used.x + used.w),
-          h: free.h
-        });
-      }
-
-      if (used.y > free.y) {
-        out.push({ x: free.x, y: free.y, w: free.w, h: used.y - free.y });
-      }
-
-      if (used.y + used.h < free.y + free.h) {
-        out.push({
-          x: free.x,
-          y: used.y + used.h,
-          w: free.w,
-          h: (free.y + free.h) - (used.y + used.h)
-        });
-      }
-
-      return out;
-    }
-
-    function partOrientations(part) {
+    function guillotineOrientationOptions(part) {
       const options = [{ w: part.width, h: part.height, rotated: false }];
       if (Math.abs(part.width - part.height) > 0.001) {
         options.push({ w: part.height, h: part.width, rotated: true });
@@ -1402,49 +1308,74 @@
       return options;
     }
 
-    function scorePlacement(fr, op) {
-      const areaFit = area(fr.w, fr.h) - area(op.w, op.h);
-      const leftoverW = fr.w - op.w;
-      const leftoverH = fr.h - op.h;
-      const shortSideFit = Math.min(leftoverW, leftoverH);
-      const longSideFit = Math.max(leftoverW, leftoverH);
-
+    function makeSheet(stock, cutMode = "rows") {
       return {
-        areaFit,
-        shortSideFit,
-        longSideFit
+        stock,
+        cutMode,
+        shelves: [],
+        placements: [],
+        wastes: []
       };
     }
 
-    function isBetterPlacement(candidate, best) {
-      if (!best) return true;
-      if (candidate.score.areaFit !== best.score.areaFit) return candidate.score.areaFit < best.score.areaFit;
-      if (candidate.score.shortSideFit !== best.score.shortSideFit) return candidate.score.shortSideFit < best.score.shortSideFit;
-      if (candidate.score.longSideFit !== best.score.longSideFit) return candidate.score.longSideFit < best.score.longSideFit;
-      if (candidate.sheetOpenScore !== best.sheetOpenScore) return candidate.sheetOpenScore < best.sheetOpenScore;
-      return false;
+    function usedPrimarySize(sheet) {
+      if (sheet.cutMode === "columns") {
+        return sheet.shelves.reduce((acc, shelf) => acc + num(shelf.w), 0);
+      }
+      return sheet.shelves.reduce((acc, shelf) => acc + num(shelf.h), 0);
     }
 
-    function findBestPlacementInSheet(sheet, part) {
+    function findBestGuillotinePlacement(sheet, part) {
+      const stock = sheet.stock;
+      const mode = sheet.cutMode || "rows";
       let best = null;
 
-      for (let i = 0; i < sheet.freeRects.length; i++) {
-        const fr = sheet.freeRects[i];
+      function remember(candidate) {
+        if (!best || candidate.score < best.score) best = candidate;
+      }
 
-        for (const op of partOrientations(part)) {
-          if (op.w <= fr.w + 0.001 && op.h <= fr.h + 0.001) {
-            const candidate = {
-              freeRect: fr,
-              x: fr.x,
-              y: fr.y,
-              w: op.w,
-              h: op.h,
-              rotated: op.rotated,
-              score: scorePlacement(fr, op),
-              sheetOpenScore: sheet.placements.length ? 0 : 1
-            };
+      for (const op of guillotineOrientationOptions(part)) {
+        if (mode === "columns") {
+          for (let i = 0; i < sheet.shelves.length; i++) {
+            const col = sheet.shelves[i];
+            const widthGap = col.w - op.w;
+            const sameWidthBand = Math.abs(widthGap) <= 0.001;
+            const remainingHeight = stock.largo - col.usedH;
+            if (sameWidthBand && remainingHeight + 0.001 >= op.h) {
+              const endWaste = remainingHeight - op.h;
+              const score = Math.max(0, endWaste);
+              remember({ type: "existing", shelfIndex: i, mode, score, ...op });
+            }
+          }
 
-            if (isBetterPlacement(candidate, best)) best = candidate;
+          const usedW = usedPrimarySize(sheet);
+          const remainingW = stock.ancho - usedW;
+          if (remainingW + 0.001 >= op.w && stock.largo + 0.001 >= op.h) {
+            const residualW = remainingW - op.w;
+            const residualH = stock.largo - op.h;
+            const score = 100000000 + (Math.max(0, residualW) * stock.largo) + Math.max(0, residualH);
+            remember({ type: "new", mode, score, ...op });
+          }
+        } else {
+          for (let i = 0; i < sheet.shelves.length; i++) {
+            const row = sheet.shelves[i];
+            const heightGap = row.h - op.h;
+            const sameHeightBand = Math.abs(heightGap) <= 0.001;
+            const remainingWidth = stock.ancho - row.usedW;
+            if (sameHeightBand && remainingWidth + 0.001 >= op.w) {
+              const endWaste = remainingWidth - op.w;
+              const score = Math.max(0, endWaste);
+              remember({ type: "existing", shelfIndex: i, mode, score, ...op });
+            }
+          }
+
+          const usedH = usedPrimarySize(sheet);
+          const remainingH = stock.largo - usedH;
+          if (remainingH + 0.001 >= op.h && stock.ancho + 0.001 >= op.w) {
+            const residualH = remainingH - op.h;
+            const residualW = stock.ancho - op.w;
+            const score = 100000000 + (Math.max(0, residualH) * stock.ancho) + Math.max(0, residualW);
+            remember({ type: "new", mode, score, ...op });
           }
         }
       }
@@ -1452,218 +1383,239 @@
       return best;
     }
 
-    function commitPlacement(sheet, part, placement) {
-      const used = {
-        x: placement.x,
-        y: placement.y,
-        w: placement.w,
-        h: placement.h
-      };
+    function applyGuillotinePlacement(sheet, part, candidate) {
+      const stock = sheet.stock;
+      const mode = sheet.cutMode || "rows";
+      let placement;
 
-      const nextFreeRects = [];
-      sheet.freeRects.forEach(fr => {
-        nextFreeRects.push(...splitFreeRect(fr, used));
-      });
+      if (mode === "columns") {
+        if (candidate.type === "existing") {
+          const col = sheet.shelves[candidate.shelfIndex];
+          placement = {
+            ...part,
+            x: col.x,
+            y: col.usedH,
+            w: candidate.w,
+            h: candidate.h,
+            rotated: candidate.rotated,
+            cutBand: candidate.shelfIndex + 1,
+            cutMode: mode
+          };
+          col.usedH += candidate.h;
+          col.items.push(placement);
+        } else {
+          const x = usedPrimarySize(sheet);
+          const col = { x, y: 0, w: candidate.w, usedH: candidate.h, items: [] };
+          placement = {
+            ...part,
+            x,
+            y: 0,
+            w: candidate.w,
+            h: candidate.h,
+            rotated: candidate.rotated,
+            cutBand: sheet.shelves.length + 1,
+            cutMode: mode
+          };
+          col.items.push(placement);
+          sheet.shelves.push(col);
+        }
+      } else {
+        if (candidate.type === "existing") {
+          const row = sheet.shelves[candidate.shelfIndex];
+          placement = {
+            ...part,
+            x: row.usedW,
+            y: row.y,
+            w: candidate.w,
+            h: candidate.h,
+            rotated: candidate.rotated,
+            cutBand: candidate.shelfIndex + 1,
+            cutMode: mode
+          };
+          row.usedW += candidate.w;
+          row.items.push(placement);
+        } else {
+          const y = usedPrimarySize(sheet);
+          const row = { x: 0, y, h: candidate.h, usedW: candidate.w, items: [] };
+          placement = {
+            ...part,
+            x: 0,
+            y,
+            w: candidate.w,
+            h: candidate.h,
+            rotated: candidate.rotated,
+            cutBand: sheet.shelves.length + 1,
+            cutMode: mode
+          };
+          row.items.push(placement);
+          sheet.shelves.push(row);
+        }
+      }
 
-      sheet.freeRects = pruneFreeRects(nextFreeRects);
-
-      sheet.placements.push({
-        ...part,
-        x: used.x,
-        y: used.y,
-        w: used.w,
-        h: used.h,
-        rotated: placement.rotated
-      });
-
+      sheet.placements.push(placement);
       return true;
     }
 
     function placeInSheet(sheet, part) {
-      const best = findBestPlacementInSheet(sheet, part);
-      if (!best) return false;
-      return commitPlacement(sheet, part, best);
+      const candidate = findBestGuillotinePlacement(sheet, part);
+      if (!candidate) return false;
+      return applyGuillotinePlacement(sheet, part, candidate);
     }
 
-    function placeInBestCompatibleSheet(sheets, part) {
-      const usedSheets = sheets.filter(sh => sh.placements.length);
-      const emptySheets = sheets.filter(sh => !sh.placements.length);
-
-      const passes = usedSheets.length ? [usedSheets, emptySheets] : [emptySheets];
-
-      for (const pass of passes) {
-        let best = null;
-        for (const sh of pass) {
-          const placement = findBestPlacementInSheet(sh, part);
-          if (!placement) continue;
-
-          const candidate = { sheet: sh, placement, score: placement.score, sheetOpenScore: placement.sheetOpenScore };
-          if (isBetterPlacement(candidate, best)) best = candidate;
-        }
-
-        if (best) return commitPlacement(best.sheet, part, best.placement);
-      }
-
-      return false;
-    }
-
-    function canPartFitRect(part, rect) {
-      const w = num(part.width ?? part.anchoCorteOpt ?? part.anchoCorteBase);
-      const h = num(part.height ?? part.largoCorteOpt ?? part.largoCorteBase);
-      if (!(w > 0) || !(h > 0)) return false;
-
-      return (
-        (w <= rect.w + 0.001 && h <= rect.h + 0.001) ||
-        (h <= rect.w + 0.001 && w <= rect.h + 0.001)
-      );
-    }
-
-    function possibleFitsForWasteRect(rect, plan) {
-      const candidateParts = [
-        ...state.selectedParts.map(p => ({
-          etiqueta: p.etiqueta,
-          width: p.anchoCorteOpt,
-          height: p.largoCorteOpt
-        })),
-        ...(plan.placements || []).map(p => ({
-          etiqueta: p.etiqueta,
-          width: p.w,
-          height: p.h
-        }))
-      ];
-
-      const fits = [];
-      const seen = new Set();
-
-      candidateParts.forEach(p => {
-        if (!p.etiqueta || seen.has(p.etiqueta)) return;
-        if (canPartFitRect(p, rect)) {
-          seen.add(p.etiqueta);
-          fits.push(p.etiqueta);
-        }
+    function wasteFitsAnyPart(waste, partTypes) {
+      return (partTypes || []).some(p => {
+        const w = num(p.anchoCorteOpt || p.width);
+        const h = num(p.largoCorteOpt || p.height);
+        if (!(w > 0) || !(h > 0)) return false;
+        return (w <= waste.w + 0.001 && h <= waste.h + 0.001) ||
+          (h <= waste.w + 0.001 && w <= waste.h + 0.001);
       });
-
-      return fits;
     }
 
-    function computeWasteRects(plan) {
-      const placements = plan.placements || [];
-      const stockW = num(plan.stock?.ancho);
-      const stockH = num(plan.stock?.largo);
-      if (!(stockW > 0) || !(stockH > 0)) return [];
+    function pushWaste(list, waste, partTypes, note = "") {
+      const clean = {
+        x: Math.max(0, num(waste.x)),
+        y: Math.max(0, num(waste.y)),
+        w: Math.max(0, num(waste.w)),
+        h: Math.max(0, num(waste.h)),
+        note
+      };
+      if (clean.w <= 1 || clean.h <= 1 || area(clean.w, clean.h) <= 100) return;
+      clean.area = area(clean.w, clean.h);
+      clean.aprovechable = wasteFitsAnyPart(clean, partTypes);
+      list.push(clean);
+    }
 
-      const xs = [0, stockW];
-      const ys = [0, stockH];
+    function buildGuillotineWastes(sheet, partTypes = []) {
+      const stock = sheet.stock;
+      const wastes = [];
+      const mode = sheet.cutMode || "rows";
 
-      placements.forEach(p => {
-        xs.push(num(p.x), num(p.x) + num(p.w));
-        ys.push(num(p.y), num(p.y) + num(p.h));
-      });
+      if (mode === "columns") {
+        const usedW = usedPrimarySize(sheet);
+        pushWaste(wastes, { x: usedW, y: 0, w: stock.ancho - usedW, h: stock.largo }, partTypes, "sobrante lateral");
 
-      const sortUnique = (arr) => [...new Set(arr.map(v => Math.round(num(v) * 1000) / 1000))]
-        .filter(v => v >= 0)
-        .sort((a, b) => a - b);
-
-      const xCuts = sortUnique(xs);
-      const yCuts = sortUnique(ys);
-
-      const rows = yCuts.length - 1;
-      const cols = xCuts.length - 1;
-      const free = Array.from({ length: rows }, () => Array(cols).fill(false));
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x0 = xCuts[c];
-          const x1 = xCuts[c + 1];
-          const y0 = yCuts[r];
-          const y1 = yCuts[r + 1];
-          if (x1 - x0 <= 0.5 || y1 - y0 <= 0.5) continue;
-
-          const cx = (x0 + x1) / 2;
-          const cy = (y0 + y1) / 2;
-
-          const occupied = placements.some(p =>
-            cx >= num(p.x) - 0.001 &&
-            cx <= num(p.x) + num(p.w) + 0.001 &&
-            cy >= num(p.y) - 0.001 &&
-            cy <= num(p.y) + num(p.h) + 0.001
-          );
-
-          free[r][c] = !occupied;
-        }
-      }
-
-      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
-      const rects = [];
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (!free[r][c] || visited[r][c]) continue;
-
-          let c2 = c;
-          while (c2 + 1 < cols && free[r][c2 + 1] && !visited[r][c2 + 1]) c2++;
-
-          let r2 = r;
-          let canGrow = true;
-          while (canGrow && r2 + 1 < rows) {
-            for (let cc = c; cc <= c2; cc++) {
-              if (!free[r2 + 1][cc] || visited[r2 + 1][cc]) {
-                canGrow = false;
-                break;
-              }
-            }
-            if (canGrow) r2++;
-          }
-
-          for (let rr = r; rr <= r2; rr++) {
-            for (let cc = c; cc <= c2; cc++) visited[rr][cc] = true;
-          }
-
-          const rect = cleanRect({
-            x: xCuts[c],
-            y: yCuts[r],
-            w: xCuts[c2 + 1] - xCuts[c],
-            h: yCuts[r2 + 1] - yCuts[r]
+        sheet.shelves.forEach((col, idx) => {
+          pushWaste(wastes, { x: col.x, y: col.usedH, w: col.w, h: stock.largo - col.usedH }, partTypes, `sobrante columna ${idx + 1}`);
+          col.items.forEach(item => {
+            pushWaste(wastes, { x: item.x + item.w, y: item.y, w: col.w - item.w, h: item.h }, partTypes, `diferencia columna ${idx + 1}`);
           });
+        });
+      } else {
+        const usedH = usedPrimarySize(sheet);
+        pushWaste(wastes, { x: 0, y: usedH, w: stock.ancho, h: stock.largo - usedH }, partTypes, "sobrante inferior");
 
-          if (area(rect.w, rect.h) > 1000) {
-            const fits = possibleFitsForWasteRect(rect, plan);
-            rect.fits = fits;
-            rect.aprovechable = fits.length > 0;
-            rect.area = area(rect.w, rect.h);
-            rects.push(rect);
-          }
-        }
+        sheet.shelves.forEach((row, idx) => {
+          pushWaste(wastes, { x: row.usedW, y: row.y, w: stock.ancho - row.usedW, h: row.h }, partTypes, `sobrante fila ${idx + 1}`);
+          row.items.forEach(item => {
+            pushWaste(wastes, { x: item.x, y: item.y + item.h, w: item.w, h: row.h - item.h }, partTypes, `diferencia fila ${idx + 1}`);
+          });
+        });
       }
 
-      return rects.sort((a, b) => b.area - a.area);
+      return wastes.sort((a, b) => b.area - a.area);
     }
 
-    function getWasteRectsForPlan(plan) {
-      if (!plan.wasteRects || !Array.isArray(plan.wasteRects)) {
-        plan.wasteRects = computeWasteRects(plan);
-      }
-      return plan.wasteRects;
+    function buildOptimizationResult(cutMode, allSheets, allParts, partTypes) {
+      const sheetInstances = allSheets.map(stock => makeSheet(stock, cutMode));
+      const unplaced = [];
+      let placedArea = 0;
+      let placedParts = 0;
+
+      allParts.forEach(part => {
+        const compatible = sheetInstances.filter(sh =>
+          sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor)
+        );
+
+        let best = null;
+        compatible.forEach(sh => {
+          const candidate = findBestGuillotinePlacement(sh, part);
+          if (!candidate) return;
+          const sheetPenalty = sh.placements.length ? 0 : 1000000000000;
+          const score = candidate.score + sheetPenalty;
+          if (!best || score < best.score) best = { sheet: sh, candidate, score };
+        });
+
+        if (best) {
+          applyGuillotinePlacement(best.sheet, part, best.candidate);
+          placedArea += part.area;
+          placedParts += 1;
+        } else {
+          unplaced.push(part);
+        }
+      });
+
+      const usedPlans = sheetInstances
+        .filter(sh => sh.placements.length)
+        .map(sh => {
+          const usedArea = area(sh.stock.ancho, sh.stock.largo);
+          const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
+          const wastes = buildGuillotineWastes(sh, partTypes);
+          return {
+            id: uid(),
+            stock: sh.stock,
+            cutMode: sh.cutMode,
+            shelves: sh.shelves,
+            placements: sh.placements,
+            wastes,
+            usedArea,
+            placedArea: pArea,
+            wasteArea: Math.max(0, usedArea - pArea),
+            utilization: usedArea ? (pArea / usedArea) * 100 : 0
+          };
+        });
+
+      const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
+      const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
+      const totalUsedWaste = usedPlans.reduce((acc, p) => acc + p.wasteArea, 0);
+
+      return {
+        cutMode,
+        usedPlans,
+        summary: {
+          usedSheets: usedPlans.length,
+          placedParts,
+          yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
+          usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
+          waste: totalUsedWaste,
+          unplaced
+        }
+      };
+    }
+
+    function chooseBestOptimization(results) {
+      return results.sort((a, b) => {
+        const aUnplaced = a.summary.unplaced.length;
+        const bUnplaced = b.summary.unplaced.length;
+        if (aUnplaced !== bUnplaced) return aUnplaced - bUnplaced;
+        if (a.summary.usedSheets !== b.summary.usedSheets) return a.summary.usedSheets - b.summary.usedSheets;
+        if (Math.abs(a.summary.usedYield - b.summary.usedYield) > 0.0001) return b.summary.usedYield - a.summary.usedYield;
+        return a.cutMode === "rows" ? -1 : 1;
+      })[0];
     }
 
     function exactSheetsRequired(parts, stock) {
       if (!parts.length) return 0;
-      const sheets = [];
-      const sorted = [...parts].sort((a, b) =>
-        b.area - a.area ||
-        Math.max(b.width, b.height) - Math.max(a.width, a.height) ||
-        Math.min(b.width, b.height) - Math.min(a.width, a.height)
-      );
-
-      for (const part of sorted) {
-        if (!placeInBestCompatibleSheet(sheets, part)) {
-          const sh = makeSheet(stock);
-          if (!placeInSheet(sh, part)) return Infinity;
-          sheets.push(sh);
+      const sorted = [...parts].sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+      const results = ["rows", "columns"].map(mode => {
+        const sheets = [];
+        for (const part of sorted) {
+          let placed = false;
+          for (const sh of sheets) {
+            if (placeInSheet(sh, part)) {
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            const sh = makeSheet(stock, mode);
+            if (!placeInSheet(sh, part)) return Infinity;
+            sheets.push(sh);
+          }
         }
-      }
-
-      return sheets.length;
+        return sheets.length;
+      });
+      return Math.min(...results);
     }
 
     function buildPlanSignature(plan) {
@@ -1741,64 +1693,22 @@
 
         const allSheets = expandSheets();
         const allParts = expandParts().sort((a, b) =>
-          b.area - a.area ||
-          Math.max(b.width, b.height) - Math.max(a.width, a.height) ||
-          Math.min(b.width, b.height) - Math.min(a.width, a.height)
+          b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height)
         );
-        const sheetInstances = allSheets.map(makeSheet);
-        const unplaced = [];
-        let placedArea = 0;
-        let placedParts = 0;
+        const partTypes = state.selectedParts.map(p => ({
+          ...p,
+          width: p.anchoCorteOpt,
+          height: p.largoCorteOpt
+        }));
 
-        allParts.forEach(part => {
-          const compatible = sheetInstances.filter(sh =>
-            sh.stock.material === part.material &&
-            String(sh.stock.espesor) === String(part.espesor)
-          );
+        const best = chooseBestOptimization([
+          buildOptimizationResult("rows", allSheets, allParts, partTypes),
+          buildOptimizationResult("columns", allSheets, allParts, partTypes)
+        ]);
 
-          const placed = placeInBestCompatibleSheet(compatible, part);
-
-          if (placed) {
-            placedArea += part.area;
-            placedParts += 1;
-          } else {
-            unplaced.push(part);
-          }
-        });
-
-        const usedPlans = sheetInstances
-          .filter(sh => sh.placements.length)
-          .map(sh => {
-            const usedArea = area(sh.stock.ancho, sh.stock.largo);
-            const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
-            const plan = {
-              id: uid(),
-              stock: sh.stock,
-              placements: sh.placements,
-              freeRects: sh.freeRects,
-              usedArea,
-              placedArea: pArea,
-              wasteArea: Math.max(0, usedArea - pArea),
-              utilization: usedArea ? (pArea / usedArea) * 100 : 0
-            };
-            plan.wasteRects = computeWasteRects(plan);
-            return plan;
-          });
-
-        const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
-        const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
-        const totalUsedWaste = usedPlans.reduce((acc, p) => acc + p.wasteArea, 0);
-
-        state.plans = groupPlans(usedPlans);
+        state.plans = groupPlans(best.usedPlans);
         state.activePlanIndex = 0;
-        state.summary = {
-          usedSheets: usedPlans.length,
-          placedParts,
-          yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
-          usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
-          waste: totalUsedWaste,
-          unplaced
-        };
+        state.summary = best.summary;
 
         renderPlans();
         syncKpis();
@@ -1833,7 +1743,6 @@
 
       const plan = state.plans[state.activePlanIndex];
       const modelSummary = summarizePlanModels(plan);
-      const wasteRects = getWasteRectsForPlan(plan);
       const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
       areaBox.className = "";
@@ -1843,7 +1752,7 @@
             <div class="sheetTitle">
               <div>
                 <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(plan.stock.espesor)}mm</h3>
-                <div class="sheetSub">Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}</div>
+                <div class="sheetSub">Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm · Corte ${plan.cutMode === "columns" ? "por columnas" : "por filas"}${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}</div>
               </div>
               <div class="pill ${utilClass}">Rendimiento ${fmt(plan.utilization, 1)}%</div>
             </div>
@@ -1858,6 +1767,7 @@
               <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
               <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
               <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
+              <div class="miniBox"><div class="k">Sobrantes visibles</div><div class="v">${fmt((plan.wastes || []).length, 0)}</div></div>
             </div>
 
             <div style="margin-top:12px" class="tableWrap">
@@ -1879,31 +1789,6 @@
                       <td>${escapeHtml(r.cut)}</td>
                     </tr>
                   `).join("")}
-                </tbody>
-              </table>
-            </div>
-
-            <div style="margin-top:12px" class="tableWrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Sobrante</th>
-                    <th>Medida</th>
-                    <th>Área</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${wasteRects.slice(0, 8).map((r, i) => `
-                    <tr>
-                      <td>${r.aprovechable ? "Aprovechable" : "Sobrante"} ${i + 1}</td>
-                      <td>${fmt(r.w)} × ${fmt(r.h)} mm</td>
-                      <td>${fmtM2(r.area)}</td>
-                    </tr>
-                  `).join("") || `
-                    <tr>
-                      <td colspan="3">Sin sobrantes relevantes.</td>
-                    </tr>
-                  `}
                 </tbody>
               </table>
             </div>
@@ -1957,53 +1842,79 @@
       applySize(best);
     }
 
+    function drawWasteLabel(textEl, boxEl, isVertical) {
+      const boxRect = boxEl.getBoundingClientRect();
+      let availableWidth = Math.max(8, boxRect.width - 6);
+      let availableHeight = Math.max(8, boxRect.height - 6);
+
+      if (isVertical) {
+        const temp = availableWidth;
+        availableWidth = availableHeight;
+        availableHeight = temp;
+      }
+
+      let maxFont = 13;
+      let minFont = 4;
+      let best = minFont;
+
+      function applySize(size) {
+        textEl.style.fontSize = `${size}px`;
+        textEl.querySelectorAll("small").forEach(s => s.style.fontSize = `${Math.max(size * 0.78, 3.5)}px`);
+      }
+
+      for (let i = 0; i < 18; i++) {
+        const mid = (minFont + maxFont) / 2;
+        applySize(mid);
+        const fits = textEl.scrollWidth <= availableWidth + 1 && textEl.scrollHeight <= availableHeight + 1;
+        if (fits) {
+          best = mid;
+          minFont = mid;
+        } else {
+          maxFont = mid;
+        }
+      }
+      applySize(best);
+    }
+
     function drawSheet(plan, container) {
       container.innerHTML = "";
 
       const meta = document.createElement("div");
-      meta.textContent = `${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm`;
+      meta.textContent = `${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm · ${plan.cutMode === "columns" ? "corte por columnas" : "corte por filas"}`;
       meta.style.position = "absolute";
       meta.style.left = "10px";
       meta.style.top = "10px";
       meta.style.fontSize = "10px";
       meta.style.color = "#64748b";
+      meta.style.zIndex = "4";
       container.appendChild(meta);
 
-      getWasteRectsForPlan(plan).forEach((r, idx) => {
-        const left = (r.x / plan.stock.ancho) * 100;
-        const top = (r.y / plan.stock.largo) * 100;
-        const width = (r.w / plan.stock.ancho) * 100;
-        const height = (r.h / plan.stock.largo) * 100;
+      (plan.wastes || []).forEach((waste) => {
+        const left = (waste.x / plan.stock.ancho) * 100;
+        const top = (waste.y / plan.stock.largo) * 100;
+        const width = (waste.w / plan.stock.ancho) * 100;
+        const height = (waste.h / plan.stock.largo) * 100;
 
         const box = document.createElement("div");
-        box.className = "wasteRect" + (r.aprovechable ? " aprovechable" : "");
+        box.className = "wasteRect" + (waste.aprovechable ? " aprovechable" : "");
         box.style.left = left + "%";
         box.style.top = top + "%";
         box.style.width = width + "%";
         box.style.height = height + "%";
 
-        const inner = document.createElement("div");
-        inner.className = "wasteInner";
-
-        const showFullLabel = width >= 7 && height >= 4;
-        const showTinyLabel = width >= 4.5 && height >= 2.7;
-
-        if (showFullLabel || showTinyLabel) {
-          inner.innerHTML = `
-            <div>
-              <div class="wasteLabel">${fmt(r.w)} × ${fmt(r.h)}</div>
-              ${showFullLabel ? `<div class="wasteMeta">${fmtM2(r.area)}</div>` : ""}
-              ${showFullLabel && r.aprovechable ? `<div class="wasteMeta">APROVECHABLE</div>` : ""}
-            </div>
-          `;
-        }
-
-        box.title = `${r.aprovechable ? "Sobrante aprovechable" : "Sobrante"}
-Medida: ${fmt(r.w)} × ${fmt(r.h)} mm
-Área: ${fmtM2(r.area)}${r.aprovechable ? "\nCabe: " + (r.fits || []).slice(0, 3).join(", ") : ""}`;
-
-        box.appendChild(inner);
+        const text = document.createElement("div");
+        text.className = "wasteText";
+        const isVertical = waste.h > waste.w * 1.5;
+        if (isVertical) text.style.transform = "rotate(-90deg)";
+        text.innerHTML = `
+          ${fmt(waste.w)} × ${fmt(waste.h)}
+          <small>${fmtM2(waste.area)}</small>
+          ${waste.aprovechable ? "<small>APROVECHABLE</small>" : ""}
+        `;
+        box.title = `Sobrante: ${fmt(waste.w)} × ${fmt(waste.h)} mm\nÁrea: ${fmtM2(waste.area)}${waste.aprovechable ? "\nAprovechable para alguna pieza del mix" : ""}`;
+        box.appendChild(text);
         container.appendChild(box);
+        requestAnimationFrame(() => drawWasteLabel(text, box, isVertical));
       });
 
       plan.placements.forEach((p, idx) => {
@@ -2029,6 +1940,7 @@ Medida: ${fmt(r.w)} × ${fmt(r.h)} mm
         box.style.height = height + "%";
         box.style.background = c[0];
         box.style.borderColor = c[1];
+        box.style.zIndex = "2";
 
         const trim = shapeTrimPerSide(p.forma, p.trimEspecial);
         const shapeKind = getShapeKind(p.forma);
@@ -2095,7 +2007,8 @@ Medida: ${fmt(r.w)} × ${fmt(r.h)} mm
 
         box.title = `${p.etiqueta}
 Final: ${fmt(p.anchoFinal)} × ${fmt(p.largoFinal)}
-Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
+Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}
+Banda de corte: ${p.cutBand || "—"}`;
 
         inner.appendChild(text);
         box.appendChild(inner);
@@ -2211,28 +2124,24 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         ["#cffafe","#67e8f9"]
       ];
 
-      const wasteItems = getWasteRectsForPlan(plan).map((r) => {
-        const x = (num(r.x) / num(plan.stock.ancho)) * W;
-        const y = (num(r.y) / num(plan.stock.largo)) * H;
-        const w = (num(r.w) / num(plan.stock.ancho)) * W;
-        const h = (num(r.h) / num(plan.stock.largo)) * H;
-
-        const showLabel = w >= 26 && h >= 18;
-        const label = `${fmt(r.w)} × ${fmt(r.h)}`;
-        const font = Math.max(4, Math.min(7, Math.min(w, h) / 5));
-
+      const wastes = (plan.wastes || []).map((waste) => {
+        const x = (num(waste.x) / num(plan.stock.ancho)) * W;
+        const y = (num(waste.y) / num(plan.stock.largo)) * H;
+        const w = (num(waste.w) / num(plan.stock.ancho)) * W;
+        const h = (num(waste.h) / num(plan.stock.largo)) * H;
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const font = Math.max(3.5, Math.min(7.5, Math.min(w, h) / 5));
+        const rotate = h > w * 1.5 ? `transform="rotate(-90 ${cx} ${cy})"` : "";
+        const fill = waste.aprovechable ? "#fff7ed" : "#f8fafc";
+        const stroke = waste.aprovechable ? "#f59e0b" : "#94a3b8";
         return `
           <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" ry="3"
-            fill="${r.aprovechable ? "#fff7ed" : "#f8fafc"}"
-            stroke="${r.aprovechable ? "#b45309" : "#94a3b8"}"
-            stroke-dasharray="3 2"
-            stroke-width="0.8"/>
-          ${showLabel ? `
-            <text x="${x + w / 2}" y="${y + h / 2 - 1}" text-anchor="middle"
-              font-size="${font}" font-weight="700" fill="${r.aprovechable ? "#92400e" : "#475569"}">${escapeHtml(label)}</text>
-            <text x="${x + w / 2}" y="${y + h / 2 + font + 1}" text-anchor="middle"
-              font-size="${Math.max(3.5, font * 0.82)}" fill="${r.aprovechable ? "#92400e" : "#475569"}">${escapeHtml(fmtM2(r.area))}</text>
-          ` : ""}
+            fill="${fill}" stroke="${stroke}" stroke-width="1" stroke-dasharray="3 2"/>
+          <g ${rotate}>
+            <text x="${cx}" y="${cy - font * 0.45}" text-anchor="middle" font-size="${font}" font-weight="700" fill="#475569">${escapeHtml(`${fmt(waste.w)} × ${fmt(waste.h)}`)}</text>
+            <text x="${cx}" y="${cy + font * 0.7}" text-anchor="middle" font-size="${Math.max(3, font * 0.78)}" fill="#475569">${escapeHtml(fmtM2(waste.area))}</text>
+          </g>
         `;
       }).join("");
 
@@ -2314,9 +2223,9 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
           <rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff" stroke="#999999" stroke-width="1"/>
           <text x="8" y="14" font-size="9" fill="#64748b">
-            ${escapeHtml(`${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm`)}
+            ${escapeHtml(`${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm · ${plan.cutMode === "columns" ? "columnas" : "filas"}`)}
           </text>
-          ${wasteItems}
+          ${wastes}
           ${items}
         </svg>
       `;
@@ -2329,7 +2238,6 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
       const pagesHtml = plans.map((plan, idx) => {
         const modelSummary = summarizePlanModels(plan);
-        const wasteRects = getWasteRectsForPlan(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
         const globalSummaryHtml = `
@@ -2380,7 +2288,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                 <div>
                   <h3>${escapeHtml(plan.stock.material)} ${escapeHtml(String(plan.stock.espesor))}mm</h3>
                   <div class="sheetSub">
-                    Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm
+                    Tamaño lámina: ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm · Corte ${plan.cutMode === "columns" ? "por columnas" : "por filas"}
                     ${plan.count > 1 ? ` · Patrón repetido x ${plan.count}` : ""}
                   </div>
                 </div>
@@ -2392,6 +2300,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                 <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
                 <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
                 <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
+                <div class="miniBox"><div class="k">Sobrantes</div><div class="v">${fmt((plan.wastes || []).length, 0)}</div></div>
               </div>
 
               <div class="sheetViewport">
@@ -2420,32 +2329,6 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                         <td>${escapeHtml(r.cut)}</td>
                       </tr>
                     `).join("")}
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="print-section" style="margin-top:6px;">
-                <h3>Sobrantes visibles de esta lámina</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th style="width:34%">Sobrante</th>
-                      <th style="width:33%">Medida</th>
-                      <th style="width:33%">Área</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${wasteRects.slice(0, 8).map((r, i) => `
-                      <tr>
-                        <td>${r.aprovechable ? "Aprovechable" : "Sobrante"} ${i + 1}</td>
-                        <td>${fmt(r.w)} × ${fmt(r.h)} mm</td>
-                        <td>${fmtM2(r.area)}</td>
-                      </tr>
-                    `).join("") || `
-                      <tr>
-                        <td colspan="3">Sin sobrantes relevantes.</td>
-                      </tr>
-                    `}
                   </tbody>
                 </table>
               </div>
@@ -2564,7 +2447,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
             .miniSummary {
               display: grid;
-              grid-template-columns: repeat(4, 1fr);
+              grid-template-columns: repeat(5, 1fr);
               gap: 4px;
               margin-bottom: 6px;
             }
