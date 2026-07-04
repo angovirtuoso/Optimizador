@@ -184,7 +184,45 @@
     }
     body.dark .sheetCanvas{background:#0b1220;border-color:#334155}
 
-    .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px}
+    .wasteRect{
+      position:absolute;
+      overflow:hidden;
+      border:1px dashed rgba(100,116,139,.62);
+      background:rgba(248,250,252,.72);
+      border-radius:4px;
+      z-index:0;
+      pointer-events:auto;
+    }
+    .wasteRect.aprovechable{
+      border-color:rgba(180,83,9,.85);
+      background:rgba(255,247,237,.78);
+    }
+    body.dark .wasteRect{
+      background:rgba(15,23,42,.72);
+      border-color:rgba(148,163,184,.65);
+    }
+    body.dark .wasteRect.aprovechable{
+      background:rgba(42,31,6,.72);
+      border-color:rgba(251,191,36,.85);
+    }
+    .wasteInner{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      padding:2px;
+      text-align:center;
+      color:#475569;
+      line-height:1.05;
+      font-weight:700;
+    }
+    .wasteRect.aprovechable .wasteInner{color:#92400e}
+    body.dark .wasteInner{color:#cbd5e1}
+    body.dark .wasteRect.aprovechable .wasteInner{color:#fbbf24}
+    .wasteLabel{font-size:10px}
+    .wasteMeta{font-size:8px;font-weight:500;margin-top:1px}
+
+    .placement{position:absolute;overflow:hidden;border:1px solid rgba(15,23,42,.35);border-radius:4px;z-index:1}
     .placementInner{position:absolute;inset:0;display:grid;place-items:center;padding:4px;text-align:center;line-height:1.12;z-index:2}
     .placementText{
       width:100%;
@@ -1274,76 +1312,357 @@
       return { stock, freeRects: [{ x: 0, y: 0, w: stock.ancho, h: stock.largo }], placements: [] };
     }
 
-    function pruneFreeRects(rects) {
-      return rects.filter((a, i) =>
-        !rects.some((b, j) =>
-          i !== j &&
-          a.x >= b.x &&
-          a.y >= b.y &&
-          a.x + a.w <= b.x + b.w &&
-          a.y + a.h <= b.y + b.h
-        )
+    function rectsIntersect(a, b) {
+      return !(
+        b.x >= a.x + a.w ||
+        b.x + b.w <= a.x ||
+        b.y >= a.y + a.h ||
+        b.y + b.h <= a.y
       );
     }
 
-    function placeInSheet(sheet, part) {
+    function rectContains(a, b) {
+      return (
+        b.x >= a.x &&
+        b.y >= a.y &&
+        b.x + b.w <= a.x + a.w &&
+        b.y + b.h <= a.y + a.h
+      );
+    }
+
+    function cleanRect(rect) {
+      return {
+        x: Math.round(num(rect.x) * 1000) / 1000,
+        y: Math.round(num(rect.y) * 1000) / 1000,
+        w: Math.round(num(rect.w) * 1000) / 1000,
+        h: Math.round(num(rect.h) * 1000) / 1000
+      };
+    }
+
+    function pruneFreeRects(rects) {
+      const minSide = 0.5;
+      const cleaned = rects
+        .map(cleanRect)
+        .filter(r => r.w > minSide && r.h > minSide);
+
+      const unique = [];
+      const seen = new Set();
+      cleaned.forEach(r => {
+        const key = `${r.x}|${r.y}|${r.w}|${r.h}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(r);
+        }
+      });
+
+      return unique.filter((a, i) =>
+        !unique.some((b, j) => i !== j && rectContains(b, a))
+      );
+    }
+
+    function splitFreeRect(free, used) {
+      if (!rectsIntersect(free, used)) return [free];
+
+      const out = [];
+
+      if (used.x > free.x) {
+        out.push({ x: free.x, y: free.y, w: used.x - free.x, h: free.h });
+      }
+
+      if (used.x + used.w < free.x + free.w) {
+        out.push({
+          x: used.x + used.w,
+          y: free.y,
+          w: (free.x + free.w) - (used.x + used.w),
+          h: free.h
+        });
+      }
+
+      if (used.y > free.y) {
+        out.push({ x: free.x, y: free.y, w: free.w, h: used.y - free.y });
+      }
+
+      if (used.y + used.h < free.y + free.h) {
+        out.push({
+          x: free.x,
+          y: used.y + used.h,
+          w: free.w,
+          h: (free.y + free.h) - (used.y + used.h)
+        });
+      }
+
+      return out;
+    }
+
+    function partOrientations(part) {
+      const options = [{ w: part.width, h: part.height, rotated: false }];
+      if (Math.abs(part.width - part.height) > 0.001) {
+        options.push({ w: part.height, h: part.width, rotated: true });
+      }
+      return options;
+    }
+
+    function scorePlacement(fr, op) {
+      const areaFit = area(fr.w, fr.h) - area(op.w, op.h);
+      const leftoverW = fr.w - op.w;
+      const leftoverH = fr.h - op.h;
+      const shortSideFit = Math.min(leftoverW, leftoverH);
+      const longSideFit = Math.max(leftoverW, leftoverH);
+
+      return {
+        areaFit,
+        shortSideFit,
+        longSideFit
+      };
+    }
+
+    function isBetterPlacement(candidate, best) {
+      if (!best) return true;
+      if (candidate.score.areaFit !== best.score.areaFit) return candidate.score.areaFit < best.score.areaFit;
+      if (candidate.score.shortSideFit !== best.score.shortSideFit) return candidate.score.shortSideFit < best.score.shortSideFit;
+      if (candidate.score.longSideFit !== best.score.longSideFit) return candidate.score.longSideFit < best.score.longSideFit;
+      if (candidate.sheetOpenScore !== best.sheetOpenScore) return candidate.sheetOpenScore < best.sheetOpenScore;
+      return false;
+    }
+
+    function findBestPlacementInSheet(sheet, part) {
       let best = null;
 
       for (let i = 0; i < sheet.freeRects.length; i++) {
         const fr = sheet.freeRects[i];
-        const options = [{ w: part.width, h: part.height, rotated: false }];
-        if (part.width !== part.height) options.push({ w: part.height, h: part.width, rotated: true });
 
-        for (const op of options) {
-          if (op.w <= fr.w && op.h <= fr.h) {
-            const score = (fr.w - op.w) * (fr.h - op.h);
-            if (!best || score < best.score) best = { frIndex: i, score, ...op };
+        for (const op of partOrientations(part)) {
+          if (op.w <= fr.w + 0.001 && op.h <= fr.h + 0.001) {
+            const candidate = {
+              freeRect: fr,
+              x: fr.x,
+              y: fr.y,
+              w: op.w,
+              h: op.h,
+              rotated: op.rotated,
+              score: scorePlacement(fr, op),
+              sheetOpenScore: sheet.placements.length ? 0 : 1
+            };
+
+            if (isBetterPlacement(candidate, best)) best = candidate;
           }
         }
       }
 
-      if (!best) return false;
+      return best;
+    }
 
-      const fr = sheet.freeRects.splice(best.frIndex, 1)[0];
-      const rightW = fr.w - best.w;
-      const bottomH = fr.h - best.h;
+    function commitPlacement(sheet, part, placement) {
+      const used = {
+        x: placement.x,
+        y: placement.y,
+        w: placement.w,
+        h: placement.h
+      };
+
+      const nextFreeRects = [];
+      sheet.freeRects.forEach(fr => {
+        nextFreeRects.push(...splitFreeRect(fr, used));
+      });
+
+      sheet.freeRects = pruneFreeRects(nextFreeRects);
 
       sheet.placements.push({
         ...part,
-        x: fr.x,
-        y: fr.y,
-        w: best.w,
-        h: best.h,
-        rotated: best.rotated
+        x: used.x,
+        y: used.y,
+        w: used.w,
+        h: used.h,
+        rotated: placement.rotated
       });
 
-      if (rightW > 0) sheet.freeRects.push({ x: fr.x + best.w, y: fr.y, w: rightW, h: best.h });
-      if (bottomH > 0) sheet.freeRects.push({ x: fr.x, y: fr.y + best.h, w: fr.w, h: bottomH });
-      if (rightW > 0 && bottomH > 0) sheet.freeRects.push({ x: fr.x + best.w, y: fr.y + best.h, w: rightW, h: bottomH });
-
-      sheet.freeRects = pruneFreeRects(sheet.freeRects);
       return true;
+    }
+
+    function placeInSheet(sheet, part) {
+      const best = findBestPlacementInSheet(sheet, part);
+      if (!best) return false;
+      return commitPlacement(sheet, part, best);
+    }
+
+    function placeInBestCompatibleSheet(sheets, part) {
+      const usedSheets = sheets.filter(sh => sh.placements.length);
+      const emptySheets = sheets.filter(sh => !sh.placements.length);
+
+      const passes = usedSheets.length ? [usedSheets, emptySheets] : [emptySheets];
+
+      for (const pass of passes) {
+        let best = null;
+        for (const sh of pass) {
+          const placement = findBestPlacementInSheet(sh, part);
+          if (!placement) continue;
+
+          const candidate = { sheet: sh, placement, score: placement.score, sheetOpenScore: placement.sheetOpenScore };
+          if (isBetterPlacement(candidate, best)) best = candidate;
+        }
+
+        if (best) return commitPlacement(best.sheet, part, best.placement);
+      }
+
+      return false;
+    }
+
+    function canPartFitRect(part, rect) {
+      const w = num(part.width ?? part.anchoCorteOpt ?? part.anchoCorteBase);
+      const h = num(part.height ?? part.largoCorteOpt ?? part.largoCorteBase);
+      if (!(w > 0) || !(h > 0)) return false;
+
+      return (
+        (w <= rect.w + 0.001 && h <= rect.h + 0.001) ||
+        (h <= rect.w + 0.001 && w <= rect.h + 0.001)
+      );
+    }
+
+    function possibleFitsForWasteRect(rect, plan) {
+      const candidateParts = [
+        ...state.selectedParts.map(p => ({
+          etiqueta: p.etiqueta,
+          width: p.anchoCorteOpt,
+          height: p.largoCorteOpt
+        })),
+        ...(plan.placements || []).map(p => ({
+          etiqueta: p.etiqueta,
+          width: p.w,
+          height: p.h
+        }))
+      ];
+
+      const fits = [];
+      const seen = new Set();
+
+      candidateParts.forEach(p => {
+        if (!p.etiqueta || seen.has(p.etiqueta)) return;
+        if (canPartFitRect(p, rect)) {
+          seen.add(p.etiqueta);
+          fits.push(p.etiqueta);
+        }
+      });
+
+      return fits;
+    }
+
+    function computeWasteRects(plan) {
+      const placements = plan.placements || [];
+      const stockW = num(plan.stock?.ancho);
+      const stockH = num(plan.stock?.largo);
+      if (!(stockW > 0) || !(stockH > 0)) return [];
+
+      const xs = [0, stockW];
+      const ys = [0, stockH];
+
+      placements.forEach(p => {
+        xs.push(num(p.x), num(p.x) + num(p.w));
+        ys.push(num(p.y), num(p.y) + num(p.h));
+      });
+
+      const sortUnique = (arr) => [...new Set(arr.map(v => Math.round(num(v) * 1000) / 1000))]
+        .filter(v => v >= 0)
+        .sort((a, b) => a - b);
+
+      const xCuts = sortUnique(xs);
+      const yCuts = sortUnique(ys);
+
+      const rows = yCuts.length - 1;
+      const cols = xCuts.length - 1;
+      const free = Array.from({ length: rows }, () => Array(cols).fill(false));
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x0 = xCuts[c];
+          const x1 = xCuts[c + 1];
+          const y0 = yCuts[r];
+          const y1 = yCuts[r + 1];
+          if (x1 - x0 <= 0.5 || y1 - y0 <= 0.5) continue;
+
+          const cx = (x0 + x1) / 2;
+          const cy = (y0 + y1) / 2;
+
+          const occupied = placements.some(p =>
+            cx >= num(p.x) - 0.001 &&
+            cx <= num(p.x) + num(p.w) + 0.001 &&
+            cy >= num(p.y) - 0.001 &&
+            cy <= num(p.y) + num(p.h) + 0.001
+          );
+
+          free[r][c] = !occupied;
+        }
+      }
+
+      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const rects = [];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!free[r][c] || visited[r][c]) continue;
+
+          let c2 = c;
+          while (c2 + 1 < cols && free[r][c2 + 1] && !visited[r][c2 + 1]) c2++;
+
+          let r2 = r;
+          let canGrow = true;
+          while (canGrow && r2 + 1 < rows) {
+            for (let cc = c; cc <= c2; cc++) {
+              if (!free[r2 + 1][cc] || visited[r2 + 1][cc]) {
+                canGrow = false;
+                break;
+              }
+            }
+            if (canGrow) r2++;
+          }
+
+          for (let rr = r; rr <= r2; rr++) {
+            for (let cc = c; cc <= c2; cc++) visited[rr][cc] = true;
+          }
+
+          const rect = cleanRect({
+            x: xCuts[c],
+            y: yCuts[r],
+            w: xCuts[c2 + 1] - xCuts[c],
+            h: yCuts[r2 + 1] - yCuts[r]
+          });
+
+          if (area(rect.w, rect.h) > 1000) {
+            const fits = possibleFitsForWasteRect(rect, plan);
+            rect.fits = fits;
+            rect.aprovechable = fits.length > 0;
+            rect.area = area(rect.w, rect.h);
+            rects.push(rect);
+          }
+        }
+      }
+
+      return rects.sort((a, b) => b.area - a.area);
+    }
+
+    function getWasteRectsForPlan(plan) {
+      if (!plan.wasteRects || !Array.isArray(plan.wasteRects)) {
+        plan.wasteRects = computeWasteRects(plan);
+      }
+      return plan.wasteRects;
     }
 
     function exactSheetsRequired(parts, stock) {
       if (!parts.length) return 0;
       const sheets = [];
-      const sorted = [...parts].sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+      const sorted = [...parts].sort((a, b) =>
+        b.area - a.area ||
+        Math.max(b.width, b.height) - Math.max(a.width, a.height) ||
+        Math.min(b.width, b.height) - Math.min(a.width, a.height)
+      );
 
       for (const part of sorted) {
-        let placed = false;
-        for (const sh of sheets) {
-          if (placeInSheet(sh, part)) {
-            placed = true;
-            break;
-          }
-        }
-        if (!placed) {
+        if (!placeInBestCompatibleSheet(sheets, part)) {
           const sh = makeSheet(stock);
           if (!placeInSheet(sh, part)) return Infinity;
           sheets.push(sh);
         }
       }
+
       return sheets.length;
     }
 
@@ -1421,24 +1740,30 @@
         }
 
         const allSheets = expandSheets();
-        const allParts = expandParts().sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
+        const allParts = expandParts().sort((a, b) =>
+          b.area - a.area ||
+          Math.max(b.width, b.height) - Math.max(a.width, a.height) ||
+          Math.min(b.width, b.height) - Math.min(a.width, a.height)
+        );
         const sheetInstances = allSheets.map(makeSheet);
         const unplaced = [];
         let placedArea = 0;
         let placedParts = 0;
 
         allParts.forEach(part => {
-          const compatible = sheetInstances.filter(sh => sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor));
-          let placed = false;
-          for (const sh of compatible) {
-            if (placeInSheet(sh, part)) {
-              placed = true;
-              placedArea += part.area;
-              placedParts += 1;
-              break;
-            }
+          const compatible = sheetInstances.filter(sh =>
+            sh.stock.material === part.material &&
+            String(sh.stock.espesor) === String(part.espesor)
+          );
+
+          const placed = placeInBestCompatibleSheet(compatible, part);
+
+          if (placed) {
+            placedArea += part.area;
+            placedParts += 1;
+          } else {
+            unplaced.push(part);
           }
-          if (!placed) unplaced.push(part);
         });
 
         const usedPlans = sheetInstances
@@ -1446,15 +1771,18 @@
           .map(sh => {
             const usedArea = area(sh.stock.ancho, sh.stock.largo);
             const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
-            return {
+            const plan = {
               id: uid(),
               stock: sh.stock,
               placements: sh.placements,
+              freeRects: sh.freeRects,
               usedArea,
               placedArea: pArea,
               wasteArea: Math.max(0, usedArea - pArea),
               utilization: usedArea ? (pArea / usedArea) * 100 : 0
             };
+            plan.wasteRects = computeWasteRects(plan);
+            return plan;
           });
 
         const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
@@ -1505,6 +1833,7 @@
 
       const plan = state.plans[state.activePlanIndex];
       const modelSummary = summarizePlanModels(plan);
+      const wasteRects = getWasteRectsForPlan(plan);
       const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
       areaBox.className = "";
@@ -1550,6 +1879,31 @@
                       <td>${escapeHtml(r.cut)}</td>
                     </tr>
                   `).join("")}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:12px" class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Sobrante</th>
+                    <th>Medida</th>
+                    <th>Área</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${wasteRects.slice(0, 8).map((r, i) => `
+                    <tr>
+                      <td>${r.aprovechable ? "Aprovechable" : "Sobrante"} ${i + 1}</td>
+                      <td>${fmt(r.w)} × ${fmt(r.h)} mm</td>
+                      <td>${fmtM2(r.area)}</td>
+                    </tr>
+                  `).join("") || `
+                    <tr>
+                      <td colspan="3">Sin sobrantes relevantes.</td>
+                    </tr>
+                  `}
                 </tbody>
               </table>
             </div>
@@ -1614,6 +1968,43 @@
       meta.style.fontSize = "10px";
       meta.style.color = "#64748b";
       container.appendChild(meta);
+
+      getWasteRectsForPlan(plan).forEach((r, idx) => {
+        const left = (r.x / plan.stock.ancho) * 100;
+        const top = (r.y / plan.stock.largo) * 100;
+        const width = (r.w / plan.stock.ancho) * 100;
+        const height = (r.h / plan.stock.largo) * 100;
+
+        const box = document.createElement("div");
+        box.className = "wasteRect" + (r.aprovechable ? " aprovechable" : "");
+        box.style.left = left + "%";
+        box.style.top = top + "%";
+        box.style.width = width + "%";
+        box.style.height = height + "%";
+
+        const inner = document.createElement("div");
+        inner.className = "wasteInner";
+
+        const showFullLabel = width >= 7 && height >= 4;
+        const showTinyLabel = width >= 4.5 && height >= 2.7;
+
+        if (showFullLabel || showTinyLabel) {
+          inner.innerHTML = `
+            <div>
+              <div class="wasteLabel">${fmt(r.w)} × ${fmt(r.h)}</div>
+              ${showFullLabel ? `<div class="wasteMeta">${fmtM2(r.area)}</div>` : ""}
+              ${showFullLabel && r.aprovechable ? `<div class="wasteMeta">APROVECHABLE</div>` : ""}
+            </div>
+          `;
+        }
+
+        box.title = `${r.aprovechable ? "Sobrante aprovechable" : "Sobrante"}
+Medida: ${fmt(r.w)} × ${fmt(r.h)} mm
+Área: ${fmtM2(r.area)}${r.aprovechable ? "\nCabe: " + (r.fits || []).slice(0, 3).join(", ") : ""}`;
+
+        box.appendChild(inner);
+        container.appendChild(box);
+      });
 
       plan.placements.forEach((p, idx) => {
         const colors = [
@@ -1820,6 +2211,31 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
         ["#cffafe","#67e8f9"]
       ];
 
+      const wasteItems = getWasteRectsForPlan(plan).map((r) => {
+        const x = (num(r.x) / num(plan.stock.ancho)) * W;
+        const y = (num(r.y) / num(plan.stock.largo)) * H;
+        const w = (num(r.w) / num(plan.stock.ancho)) * W;
+        const h = (num(r.h) / num(plan.stock.largo)) * H;
+
+        const showLabel = w >= 26 && h >= 18;
+        const label = `${fmt(r.w)} × ${fmt(r.h)}`;
+        const font = Math.max(4, Math.min(7, Math.min(w, h) / 5));
+
+        return `
+          <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" ry="3"
+            fill="${r.aprovechable ? "#fff7ed" : "#f8fafc"}"
+            stroke="${r.aprovechable ? "#b45309" : "#94a3b8"}"
+            stroke-dasharray="3 2"
+            stroke-width="0.8"/>
+          ${showLabel ? `
+            <text x="${x + w / 2}" y="${y + h / 2 - 1}" text-anchor="middle"
+              font-size="${font}" font-weight="700" fill="${r.aprovechable ? "#92400e" : "#475569"}">${escapeHtml(label)}</text>
+            <text x="${x + w / 2}" y="${y + h / 2 + font + 1}" text-anchor="middle"
+              font-size="${Math.max(3.5, font * 0.82)}" fill="${r.aprovechable ? "#92400e" : "#475569"}">${escapeHtml(fmtM2(r.area))}</text>
+          ` : ""}
+        `;
+      }).join("");
+
       const items = (plan.placements || []).map((p, idx) => {
         const c = colors[idx % colors.length];
         const x = (num(p.x) / num(plan.stock.ancho)) * W;
@@ -1900,6 +2316,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
           <text x="8" y="14" font-size="9" fill="#64748b">
             ${escapeHtml(`${plan.stock.material} ${plan.stock.espesor}mm · ${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)} mm`)}
           </text>
+          ${wasteItems}
           ${items}
         </svg>
       `;
@@ -1912,6 +2329,7 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
 
       const pagesHtml = plans.map((plan, idx) => {
         const modelSummary = summarizePlanModels(plan);
+        const wasteRects = getWasteRectsForPlan(plan);
         const utilClass = plan.utilization < 85 ? "red" : plan.utilization <= 95 ? "yellow" : "green";
 
         const globalSummaryHtml = `
@@ -2002,6 +2420,32 @@ Corte: ${fmt(p.anchoCorteBase)} × ${fmt(p.largoCorteBase)}`;
                         <td>${escapeHtml(r.cut)}</td>
                       </tr>
                     `).join("")}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="print-section" style="margin-top:6px;">
+                <h3>Sobrantes visibles de esta lámina</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:34%">Sobrante</th>
+                      <th style="width:33%">Medida</th>
+                      <th style="width:33%">Área</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${wasteRects.slice(0, 8).map((r, i) => `
+                      <tr>
+                        <td>${r.aprovechable ? "Aprovechable" : "Sobrante"} ${i + 1}</td>
+                        <td>${fmt(r.w)} × ${fmt(r.h)} mm</td>
+                        <td>${fmtM2(r.area)}</td>
+                      </tr>
+                    `).join("") || `
+                      <tr>
+                        <td colspan="3">Sin sobrantes relevantes.</td>
+                      </tr>
+                    `}
                   </tbody>
                 </table>
               </div>
