@@ -1,4 +1,40 @@
-import { appendObjectRow, generateFolio } from "./_lib.js";
+import { appendObjectRow, generateFolio, getSheetsClient } from "./_lib.js";
+
+const DATA_SHEET_NAME = "Optimizaciones_Data";
+const CHUNK_SIZE = 40000;
+
+function chunkString(text, size = CHUNK_SIZE) {
+  const value = String(text || "");
+  const chunks = [];
+
+  for (let i = 0; i < value.length; i += size) {
+    chunks.push(value.slice(i, i + size));
+  }
+
+  return chunks;
+}
+
+async function appendPayloadChunks(folio, payloadJson) {
+  const { sheets, spreadsheetId } = getSheetsClient();
+
+  const chunks = chunkString(payloadJson, CHUNK_SIZE);
+
+  if (!chunks.length) {
+    throw new Error("El payload está vacío; no hay información para guardar.");
+  }
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${DATA_SHEET_NAME}!A:C`,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: {
+      values: chunks.map((chunk, index) => [folio, index, chunk]),
+    },
+  });
+
+  return chunks.length;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -31,17 +67,31 @@ export default async function handler(req, res) {
       summary,
     };
 
+    const payloadJson = JSON.stringify(payload);
+    const chunkCount = await appendPayloadChunks(folio, payloadJson);
+
+    const payloadPointer = {
+      storage: "chunks",
+      sheet: DATA_SHEET_NAME,
+      chunks: chunkCount,
+      chunkSize: CHUNK_SIZE,
+      chars: payloadJson.length,
+      version: 2,
+    };
+
     await appendObjectRow("Optimizaciones", {
       Folio: folio,
       Nombre_Optimizacion: name,
       Notas: notes,
       Fecha: timestamp,
-      Payload_JSON: JSON.stringify(payload),
+      Payload_JSON: JSON.stringify(payloadPointer),
     });
 
     return res.status(200).json({
       ok: true,
       folio,
+      storage: "chunks",
+      chunks: chunkCount,
       message: "Optimización guardada correctamente",
     });
   } catch (error) {
