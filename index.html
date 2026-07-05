@@ -112,7 +112,7 @@
     .chip.bad .dot{background:var(--bad)}
 
     .grid{display:grid;grid-template-columns:500px minmax(0,1fr);gap:16px}
-    .stack{display:grid;gap:16px}
+    .stack{display:grid;gap:16px;align-content:start}
     .card{
       background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:var(--shadow)
     }
@@ -158,13 +158,36 @@
     }
     th{background:rgba(148,163,184,.08);color:var(--muted);font-weight:700}
     tr:last-child td{border-bottom:none}
-    .actions{display:flex;gap:6px;flex-wrap:wrap}
+    .actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
     .miniBtn{min-height:32px;padding:0 10px;border-radius:10px;font-size:var(--fs-xs)}
+    .iconBtn{
+      width:34px;
+      min-width:34px;
+      height:34px;
+      min-height:34px;
+      padding:0;
+      border-radius:10px;
+      display:inline-grid;
+      place-items:center;
+      font-size:16px;
+      line-height:1;
+    }
+    .iconBtn.danger{background:var(--badBg);color:var(--bad);border-color:rgba(185,28,28,.25)}
+    .iconBtn.edit{background:var(--soft)}
 
-    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-    .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
-    .kpi .k{font-size:var(--fs-xs);color:var(--muted)}
-    .kpi .v{margin-top:6px;font-size:28px;font-weight:700;letter-spacing:-.04em}
+    .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start}
+    .kpi{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:10px 14px;
+      box-shadow:var(--shadow);
+      min-height:0;
+      height:auto;
+      align-self:start;
+    }
+    .kpi .k{font-size:var(--fs-xs);color:var(--muted);line-height:1.15}
+    .kpi .v{margin-top:4px;font-size:26px;line-height:1.05;font-weight:700;letter-spacing:-.04em}
 
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
     .tab{
@@ -652,6 +675,33 @@
     </div>
   </div>
 
+  <div id="editSheetModalBack" class="modalBack">
+    <div class="modal">
+      <div class="sectionHead">
+        <div>
+          <h2>Editar lámina agregada</h2>
+          <div class="subtle">Modifica material, espesor, medida y cantidad de la lámina ya agregada.</div>
+        </div>
+        <button id="deleteSheetBtn" class="iconDanger" title="Eliminar lámina">🗑️</button>
+      </div>
+
+      <input id="editSheetId" type="hidden" />
+
+      <div class="row5">
+        <label><span class="lab">Material</span><select id="editSheetMaterial"></select></label>
+        <label><span class="lab">Espesor</span><select id="editSheetEspesor"></select></label>
+        <label><span class="lab">Ancho mm</span><input id="editSheetAncho" type="number" step="0.01" /></label>
+        <label><span class="lab">Largo mm</span><input id="editSheetLargo" type="number" step="0.01" /></label>
+        <label><span class="lab">Cantidad</span><input id="editSheetCantidad" type="number" min="1" step="1" /></label>
+      </div>
+
+      <div class="modalFooter">
+        <button id="closeEditSheetModalBtn">Cerrar</button>
+        <button id="saveEditSheetBtn" class="primary">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <div id="saveModalBack" class="modalBack">
     <div class="modal">
       <div class="sectionHead">
@@ -1033,6 +1083,7 @@
       renderSelect("sheetMaterial", state.catalogs.materiales, "Selecciona", state.catalogs.materiales[0] || "");
       renderSelect("sheetEspesor", state.catalogs.espesores, "", state.catalogs.espesores.includes("3") ? "3" : (state.catalogs.espesores[0] || ""));
       fillEditPartSelectors();
+      fillEditSheetSelectors();
 
       const defaultSheet =
         state.catalogs.laminas.find(x => num(x.Ancho) === 2600 && num(x.Largo) === 3600) ||
@@ -1056,7 +1107,8 @@
           <td>${fmt(p.cantidad, 0)}</td>
           <td>
             <div class="actions">
-              <button class="miniBtn" data-edit-part="${p.id}">Editar</button>
+              <button class="iconBtn edit" data-edit-part="${p.id}" title="Editar modelo" aria-label="Editar modelo">✏️</button>
+              <button class="iconBtn danger" data-del-part="${p.id}" title="Eliminar modelo" aria-label="Eliminar modelo">🗑️</button>
             </div>
           </td>
         </tr>
@@ -1064,6 +1116,10 @@
 
       document.querySelectorAll("[data-edit-part]").forEach(btn => {
         btn.onclick = () => openEditPartModal(btn.dataset.editPart);
+      });
+
+      document.querySelectorAll("[data-del-part]").forEach(btn => {
+        btn.onclick = () => deletePartById(btn.dataset.delPart, true);
       });
     }
 
@@ -1074,16 +1130,21 @@
           <td>${escapeHtml(s.espesor)}</td>
           <td>${fmt(s.ancho)} × ${fmt(s.largo)} mm</td>
           <td>${fmt(s.cantidad, 0)}</td>
-          <td><div class="actions"><button class="miniBtn" data-del-sheet="${s.id}">Eliminar</button></div></td>
+          <td>
+            <div class="actions">
+              <button class="iconBtn edit" data-edit-sheet="${s.id}" title="Editar lámina" aria-label="Editar lámina">✏️</button>
+              <button class="iconBtn danger" data-del-sheet="${s.id}" title="Eliminar lámina" aria-label="Eliminar lámina">🗑️</button>
+            </div>
+          </td>
         </tr>
       `).join("");
 
+      document.querySelectorAll("[data-edit-sheet]").forEach(btn => {
+        btn.onclick = () => openEditSheetModal(btn.dataset.editSheet);
+      });
+
       document.querySelectorAll("[data-del-sheet]").forEach(btn => {
-        btn.onclick = () => {
-          state.selectedSheets = state.selectedSheets.filter(s => s.id !== btn.dataset.delSheet);
-          renderSheetsTable();
-          updateNotices();
-        };
+        btn.onclick = () => deleteSheetById(btn.dataset.delSheet, true);
       });
     }
 
@@ -1091,6 +1152,63 @@
       renderSelect("editMaterial", state.catalogs.materiales, "", $("editMaterial")?.value || "");
       renderSelect("editEspesor", state.catalogs.espesores, "", $("editEspesor")?.value || "");
       renderSelect("editForma", ["Rectangular", "Óvalo", "Circular", "Trapecio rectángulo", "Esq. Red."], "", $("editForma")?.value || "Rectangular");
+    }
+
+    function fillEditSheetSelectors() {
+      renderSelect("editSheetMaterial", state.catalogs.materiales, "Selecciona", $("editSheetMaterial")?.value || "");
+      renderSelect("editSheetEspesor", state.catalogs.espesores, "", $("editSheetEspesor")?.value || "");
+    }
+
+    function openEditSheetModal(sheetId) {
+      const sheet = state.selectedSheets.find(s => s.id === sheetId);
+      if (!sheet) return;
+
+      fillEditSheetSelectors();
+      $("editSheetId").value = sheet.id;
+      $("editSheetMaterial").value = sheet.material || "";
+      $("editSheetEspesor").value = sheet.espesor || "";
+      $("editSheetAncho").value = sheet.ancho ?? "";
+      $("editSheetLargo").value = sheet.largo ?? "";
+      $("editSheetCantidad").value = sheet.cantidad ?? 1;
+
+      openModal("editSheetModalBack");
+    }
+
+    function saveEditedSheet() {
+      const id = $("editSheetId").value;
+      const idx = state.selectedSheets.findIndex(s => s.id === id);
+      if (idx === -1) return;
+
+      const updated = {
+        ...state.selectedSheets[idx],
+        material: $("editSheetMaterial").value,
+        espesor: $("editSheetEspesor").value,
+        ancho: num($("editSheetAncho").value),
+        largo: num($("editSheetLargo").value),
+        cantidad: Math.max(1, Math.round(num($("editSheetCantidad").value || 1)))
+      };
+
+      if (!updated.material || !updated.espesor || !(updated.ancho > 0) || !(updated.largo > 0)) {
+        setStatus($("noticeBox"), "Completa material, espesor y dimensiones válidas para la lámina.", "warn");
+        return;
+      }
+
+      state.selectedSheets[idx] = updated;
+      closeModal("editSheetModalBack");
+      renderSheetsTable();
+      updateNotices();
+      setStatus($("noticeBox"), "Lámina actualizada correctamente. Vuelve a optimizar para recalcular el plan.", "ok");
+    }
+
+    function deleteSheetById(sheetId, askConfirm = false) {
+      if (!sheetId) return;
+      if (askConfirm && !confirm("¿Eliminar esta lámina del optimizador?")) return;
+
+      state.selectedSheets = state.selectedSheets.filter(s => s.id !== sheetId);
+      closeModal("editSheetModalBack");
+      renderSheetsTable();
+      updateNotices();
+      setStatus($("noticeBox"), "Lámina eliminada del optimizador. Vuelve a optimizar para recalcular el plan.", "ok");
     }
 
     function openEditPartModal(partId) {
@@ -1152,15 +1270,19 @@
       setStatus($("noticeBox"), "Modelo actualizado correctamente.", "ok");
     }
 
-    function deleteEditedPart() {
-      const id = $("editPartId").value;
-      if (!id) return;
+    function deletePartById(partId, askConfirm = false) {
+      if (!partId) return;
+      if (askConfirm && !confirm("¿Eliminar este modelo del optimizador?")) return;
 
-      state.selectedParts = state.selectedParts.filter(p => p.id !== id);
+      state.selectedParts = state.selectedParts.filter(p => p.id !== partId);
       closeModal("editPartModalBack");
       renderPartsTable();
       updateNotices();
-      setStatus($("noticeBox"), "Modelo eliminado del optimizador.", "ok");
+      setStatus($("noticeBox"), "Modelo eliminado del optimizador. Vuelve a optimizar para recalcular el plan.", "ok");
+    }
+
+    function deleteEditedPart() {
+      deletePartById($("editPartId").value, false);
     }
 
     async function refreshCatalogs() {
@@ -2881,6 +3003,10 @@ Banda de corte: ${p.cutBand || "—"}`;
       $("deletePartBtn").addEventListener("click", deleteEditedPart);
       $("editForma").addEventListener("change", suggestEditTrimByShape);
 
+      $("closeEditSheetModalBtn").addEventListener("click", () => closeModal("editSheetModalBack"));
+      $("saveEditSheetBtn").addEventListener("click", saveEditedSheet);
+      $("deleteSheetBtn").addEventListener("click", () => deleteSheetById($("editSheetId").value, false));
+
       $("openSaveModalBtn").addEventListener("click", () => openModal("saveModalBack"));
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
       $("saveOptimizationBtn").addEventListener("click", saveOptimization);
@@ -2895,7 +3021,7 @@ Banda de corte: ${p.cutBand || "—"}`;
       $("optimizationDateFrom").addEventListener("change", renderOptimizationsTable);
       $("optimizationDateTo").addEventListener("change", renderOptimizationsTable);
 
-      ["manualModalBack","editPartModalBack","saveModalBack","loadModalBack"].forEach(id => {
+      ["manualModalBack","editPartModalBack","editSheetModalBack","saveModalBack","loadModalBack"].forEach(id => {
         $(id).addEventListener("click", e => {
           if (e.target.id === id) closeModal(id);
         });
