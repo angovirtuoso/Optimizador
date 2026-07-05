@@ -146,7 +146,13 @@
     .status.bad{background:var(--badBg);color:var(--bad)}
 
     .tableWrap{border:1px solid var(--line);border-radius:16px;overflow:hidden}
-    table{width:100%;border-collapse:collapse}
+    .loadFilters{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(140px,.8fr) minmax(130px,.7fr) minmax(130px,.7fr) auto;gap:10px;align-items:end;margin-top:12px}
+    .loadTableWrap{max-height:390px;overflow:auto;margin-top:12px}
+    .loadTableWrap table{min-width:880px}
+    .loadMeta{font-size:11px;color:var(--muted);line-height:1.25;margin-top:3px}
+    .loadFolio{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;color:var(--muted);word-break:break-all}
+    .loadModels{max-width:260px}
+    .manualLoadBox{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
     th,td{
       padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:var(--fs-sm)
     }
@@ -345,7 +351,7 @@
     }
 
     @media (max-width:760px){
-      .row5,.row4,.row3,.row2,.kpis,.miniSummary{grid-template-columns:1fr}
+      .row5,.row4,.row3,.row2,.kpis,.miniSummary,.loadFilters{grid-template-columns:1fr}
       .sheetCanvas{min-height:520px}
     }
 
@@ -674,18 +680,62 @@
       <div class="sectionHead">
         <div>
           <h2>Cargar optimización</h2>
-          <div class="subtle">Carga una optimización guardada por folio</div>
+          <div class="subtle">Busca y selecciona una optimización guardada. También puedes cargar por folio manual.</div>
+        </div>
+        <button id="refreshSavedOptimizationsBtn">Actualizar lista</button>
+      </div>
+
+      <div class="loadFilters">
+        <label>
+          <span class="lab">Buscar</span>
+          <input id="optimizationSearch" type="text" placeholder="Cliente, modelo, folio, nombre o notas" />
+        </label>
+        <label>
+          <span class="lab">Cliente</span>
+          <select id="optimizationClientFilter"></select>
+        </label>
+        <label>
+          <span class="lab">Desde</span>
+          <input id="optimizationDateFrom" type="date" />
+        </label>
+        <label>
+          <span class="lab">Hasta</span>
+          <input id="optimizationDateTo" type="date" />
+        </label>
+        <button id="clearOptimizationFiltersBtn">Limpiar</button>
+      </div>
+
+      <div class="tableWrap loadTableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Nombre / Folio</th>
+              <th>Cliente</th>
+              <th>Modelos</th>
+              <th>Piezas</th>
+              <th>Láminas</th>
+              <th>Rend.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="optimizationsTbody">
+            <tr><td colspan="8">Abre esta ventana para cargar la lista de optimizaciones.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="manualLoadBox">
+        <div class="subtle" style="margin-bottom:8px">Carga manual por folio</div>
+        <div class="row2">
+          <label><span class="lab">Folio</span><input id="folioToLoad" type="text" placeholder="OPT-20260419-0001" /></label>
+          <div style="display:flex;align-items:end">
+            <button id="loadByFolioBtn" class="primary">Cargar folio</button>
+          </div>
         </div>
       </div>
 
-      <div class="row2">
-        <label><span class="lab">Folio</span><input id="folioToLoad" type="text" placeholder="OPT-20260419-0001" /></label>
-        <div style="display:flex;align-items:end">
-          <button id="loadByFolioBtn" class="primary">Cargar</button>
-        </div>
-      </div>
-
-      <div style="margin-top:14px" id="loadStatus" class="status">Escribe un folio y presiona Cargar.</div>
+      <div style="margin-top:14px" id="loadStatus" class="status">Selecciona una optimización de la lista o escribe un folio.</div>
 
       <div class="modalFooter">
         <button id="closeLoadModalBtn">Cerrar</button>
@@ -704,7 +754,9 @@
       connectionOk: false,
       plans: [],
       activePlanIndex: 0,
-      summary: { usedSheets: 0, placedParts: 0, yieldLoaded: 0, usedYield: 0, waste: 0, unplaced: [] }
+      summary: { usedSheets: 0, placedParts: 0, yieldLoaded: 0, usedYield: 0, waste: 0, unplaced: [] },
+      savedOptimizations: [],
+      savedOptimizationsLoaded: false
     };
 
     const OVAL_CIRCLE_TRIM_PER_SIDE = 17;
@@ -764,6 +816,9 @@
 
       if (action === "getCatalogs") {
         url = "/api/getCatalogs";
+        options = { method: "GET" };
+      } else if (action === "listOptimizations") {
+        url = "/api/listOptimizations";
         options = { method: "GET" };
       } else if (action === "addManualModel") {
         url = "/api/addManualModel";
@@ -2583,13 +2638,167 @@ Banda de corte: ${p.cutBand || "—"}`;
       }
     }
 
-    async function loadOptimizationByFolio() {
-      const folio = $("folioToLoad").value.trim();
+    function formatOptimizationDate(value) {
+      if (!value) return "—";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value).slice(0, 16);
+      return d.toLocaleString("es-MX", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function optimizationDateOnly(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "";
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function getOptimizationSearchBlob(opt) {
+      return [
+        opt.folio,
+        opt.name,
+        opt.notes,
+        ...(Array.isArray(opt.clientes) ? opt.clientes : []),
+        ...(Array.isArray(opt.modelos) ? opt.modelos : [])
+      ].join(" ").toLowerCase();
+    }
+
+    function renderOptimizationClientOptions() {
+      const select = $("optimizationClientFilter");
+      if (!select) return;
+
+      const previous = select.value || "Todos";
+      const clients = Array.from(new Set(
+        state.savedOptimizations.flatMap(opt => Array.isArray(opt.clientes) ? opt.clientes : [])
+      )).filter(Boolean).sort((a, b) => a.localeCompare(b));
+
+      select.innerHTML = ["Todos", ...clients]
+        .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+        .join("");
+
+      select.value = clients.includes(previous) ? previous : "Todos";
+    }
+
+    function filteredSavedOptimizations() {
+      const q = String($("optimizationSearch")?.value || "").trim().toLowerCase();
+      const client = String($("optimizationClientFilter")?.value || "Todos").trim();
+      const dateFrom = String($("optimizationDateFrom")?.value || "").trim();
+      const dateTo = String($("optimizationDateTo")?.value || "").trim();
+
+      return state.savedOptimizations.filter(opt => {
+        if (q && !getOptimizationSearchBlob(opt).includes(q)) return false;
+
+        if (client && client !== "Todos") {
+          const clients = Array.isArray(opt.clientes) ? opt.clientes : [];
+          if (!clients.includes(client)) return false;
+        }
+
+        const optDate = optimizationDateOnly(opt.fecha);
+        if (dateFrom && (!optDate || optDate < dateFrom)) return false;
+        if (dateTo && (!optDate || optDate > dateTo)) return false;
+
+        return true;
+      });
+    }
+
+    function renderOptimizationsTable() {
+      const tbody = $("optimizationsTbody");
+      if (!tbody) return;
+
+      const rows = filteredSavedOptimizations();
+
+      if (!state.savedOptimizationsLoaded) {
+        tbody.innerHTML = `<tr><td colspan="8">Presiona <b>Actualizar lista</b> para consultar las optimizaciones guardadas.</td></tr>`;
+        return;
+      }
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="8">No encontré optimizaciones con esos filtros.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(opt => {
+        const clientes = (Array.isArray(opt.clientes) && opt.clientes.length) ? opt.clientes.join(", ") : "—";
+        const modelos = opt.modelosPreview || (Array.isArray(opt.modelos) ? opt.modelos.slice(0, 4).join(", ") : "—") || "—";
+        const moreModels = Array.isArray(opt.modelos) && opt.modelos.length > 4 ? ` +${opt.modelos.length - 4}` : "";
+        const pieces = num(opt.placedParts) || num(opt.requestedParts);
+        const sheets = num(opt.usedSheets) || num(opt.loadedSheets);
+        const rendimiento = num(opt.usedYield) || num(opt.yieldLoaded);
+        const disabled = opt.hasPayload === false || Boolean(opt.parseError);
+
+        return `
+          <tr>
+            <td>${escapeHtml(formatOptimizationDate(opt.fecha))}</td>
+            <td>
+              <strong>${escapeHtml(opt.name || "Sin nombre")}</strong>
+              <div class="loadFolio">${escapeHtml(opt.folio)}</div>
+              ${opt.notes ? `<div class="loadMeta">${escapeHtml(opt.notes)}</div>` : ""}
+              ${opt.parseError ? `<div class="loadMeta" style="color:var(--bad)">${escapeHtml(opt.parseError)}</div>` : ""}
+            </td>
+            <td>${escapeHtml(clientes)}</td>
+            <td class="loadModels">${escapeHtml(modelos)}${escapeHtml(moreModels)}</td>
+            <td>${fmt(pieces, 0)}</td>
+            <td>${fmt(sheets, 0)}</td>
+            <td>${rendimiento ? `${fmt(rendimiento, 1)}%` : "—"}</td>
+            <td><button class="miniBtn primary" data-load-saved-folio="${escapeHtml(opt.folio)}" ${disabled ? "disabled" : ""}>Cargar</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      document.querySelectorAll("[data-load-saved-folio]").forEach(btn => {
+        btn.onclick = () => loadOptimizationByFolio(btn.dataset.loadSavedFolio);
+      });
+    }
+
+    async function refreshOptimizationsList() {
+      setStatus($("loadStatus"), "Leyendo optimizaciones guardadas…", "warn");
+
+      try {
+        const data = await apiCall("listOptimizations");
+        state.savedOptimizations = Array.isArray(data.optimizations) ? data.optimizations : [];
+        state.savedOptimizationsLoaded = true;
+        renderOptimizationClientOptions();
+        renderOptimizationsTable();
+        setStatus($("loadStatus"), `Lista actualizada: ${fmt(state.savedOptimizations.length, 0)} optimización(es) disponible(s).`, "ok");
+      } catch (err) {
+        state.savedOptimizationsLoaded = false;
+        renderOptimizationsTable();
+        setStatus($("loadStatus"), `No se pudo cargar la lista. ${escapeHtml(err.message)}`, "bad");
+      }
+    }
+
+    function clearOptimizationFilters() {
+      if ($("optimizationSearch")) $("optimizationSearch").value = "";
+      if ($("optimizationClientFilter")) $("optimizationClientFilter").value = "Todos";
+      if ($("optimizationDateFrom")) $("optimizationDateFrom").value = "";
+      if ($("optimizationDateTo")) $("optimizationDateTo").value = "";
+      renderOptimizationsTable();
+    }
+
+    function openLoadModal() {
+      openModal("loadModalBack");
+      renderOptimizationClientOptions();
+      renderOptimizationsTable();
+      if (!state.savedOptimizationsLoaded) refreshOptimizationsList();
+    }
+
+    async function loadOptimizationByFolio(folioOverride = "") {
+      const folio = String(folioOverride || $("folioToLoad").value || "").trim();
 
       if (!folio) {
         setStatus($("loadStatus"), "Debes escribir un folio.", "warn");
         return;
       }
+
+      if ($("folioToLoad")) $("folioToLoad").value = folio;
 
       try {
         const data = await apiCall("loadOptimization", { folio });
@@ -2676,9 +2885,15 @@ Banda de corte: ${p.cutBand || "—"}`;
       $("closeSaveModalBtn").addEventListener("click", () => closeModal("saveModalBack"));
       $("saveOptimizationBtn").addEventListener("click", saveOptimization);
 
-      $("openLoadModalBtn").addEventListener("click", () => openModal("loadModalBack"));
+      $("openLoadModalBtn").addEventListener("click", openLoadModal);
       $("closeLoadModalBtn").addEventListener("click", () => closeModal("loadModalBack"));
-      $("loadByFolioBtn").addEventListener("click", loadOptimizationByFolio);
+      $("loadByFolioBtn").addEventListener("click", () => loadOptimizationByFolio());
+      $("refreshSavedOptimizationsBtn").addEventListener("click", refreshOptimizationsList);
+      $("clearOptimizationFiltersBtn").addEventListener("click", clearOptimizationFilters);
+      $("optimizationSearch").addEventListener("input", renderOptimizationsTable);
+      $("optimizationClientFilter").addEventListener("change", renderOptimizationsTable);
+      $("optimizationDateFrom").addEventListener("change", renderOptimizationsTable);
+      $("optimizationDateTo").addEventListener("change", renderOptimizationsTable);
 
       ["manualModalBack","editPartModalBack","saveModalBack","loadModalBack"].forEach(id => {
         $(id).addEventListener("click", e => {
