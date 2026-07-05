@@ -1068,8 +1068,8 @@
       }
     }
 
-    function currentFilteredModels() {
-      const q = String($("catalogModelSearch").value || "").trim().toLowerCase();
+    function currentFilteredModels(ignoreSearch = false) {
+      const q = ignoreSearch ? "" : String($("catalogModelSearch").value || "").trim().toLowerCase();
       return state.catalogs.modelos.filter(m => {
         if (state.filters.cliente !== "Todos" && m.Cliente !== state.filters.cliente) return false;
         if (state.filters.material !== "Todos" && m.Material !== state.filters.material) return false;
@@ -1093,7 +1093,7 @@
         .map(m => `<option value="${escapeHtml((m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim())}"></option>`)
         .join("");
 
-      const selected = currentFilteredModels().find(m =>
+      const selected = currentFilteredModels(true).find(m =>
         (m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim() === $("catalogModelSearch").value.trim()
       );
 
@@ -1115,6 +1115,49 @@
         <strong>Medida corte:</strong> ${fmt(selected.Ancho_Corte)} × ${fmt(selected.Largo_Corte)} mm<br>
         <strong>Acabado:</strong> ${escapeHtml(selected.Acabado || "-")}
       `;
+    }
+
+
+    function catalogModelLabel(model) {
+      return (model?.Etiqueta || `${model?.Modelo || ""} - ${model?.Cliente || ""}`).trim();
+    }
+
+    function findCatalogModelByValue(value) {
+      const needle = String(value || "").trim();
+      if (!needle) return null;
+      return currentFilteredModels(true).find(m => catalogModelLabel(m) === needle) || null;
+    }
+
+    function openCatalogModelPicker() {
+      const input = $("catalogModelSearch");
+      if (!input) return;
+
+      if (findCatalogModelByValue(input.value)) {
+        input.dataset.previousValue = input.value;
+        input.value = "";
+        renderCatalogModelDatalist();
+      }
+
+      setTimeout(() => {
+        try {
+          if (typeof input.showPicker === "function") input.showPicker();
+        } catch {}
+      }, 0);
+    }
+
+    function restoreCatalogModelPickerValue() {
+      const input = $("catalogModelSearch");
+      if (!input) return;
+
+      setTimeout(() => {
+        if (!String(input.value || "").trim() && input.dataset.previousValue) {
+          input.value = input.dataset.previousValue;
+          delete input.dataset.previousValue;
+          renderCatalogModelDatalist();
+        } else if (String(input.value || "").trim()) {
+          delete input.dataset.previousValue;
+        }
+      }, 160);
     }
 
     function renderSelectors() {
@@ -1357,7 +1400,7 @@
     }
 
     function addCatalogModel() {
-      const selected = currentFilteredModels().find(m =>
+      const selected = currentFilteredModels(true).find(m =>
         (m.Etiqueta || `${m.Modelo} - ${m.Cliente}`).trim() === $("catalogModelSearch").value.trim()
       );
 
@@ -1542,6 +1585,61 @@
         return sheet.shelves.reduce((acc, shelf) => acc + num(shelf.w), 0);
       }
       return sheet.shelves.reduce((acc, shelf) => acc + num(shelf.h), 0);
+    }
+
+
+    function calculateGuillotineCutLengthMm(planOrSheet) {
+      const stock = planOrSheet?.stock || {};
+      const shelves = Array.isArray(planOrSheet?.shelves) ? planOrSheet.shelves : [];
+      const mode = planOrSheet?.cutMode || "rows";
+      let total = 0;
+
+      if (!stock || !shelves.length) return 0;
+
+      if (mode === "columns") {
+        shelves.forEach(col => {
+          const cutX = num(col.x) + num(col.w);
+          if (cutX > 0.001 && cutX < num(stock.ancho) - 0.001) {
+            total += num(stock.largo);
+          }
+
+          const positions = new Set();
+          (col.items || []).forEach(item => {
+            const y = num(item.y) + num(item.h);
+            if (y > 0.001 && y < num(stock.largo) - 0.001) {
+              positions.add(String(Math.round(y * 1000) / 1000));
+            }
+          });
+          total += positions.size * num(col.w);
+        });
+      } else {
+        shelves.forEach(row => {
+          const cutY = num(row.y) + num(row.h);
+          if (cutY > 0.001 && cutY < num(stock.largo) - 0.001) {
+            total += num(stock.ancho);
+          }
+
+          const positions = new Set();
+          (row.items || []).forEach(item => {
+            const x = num(item.x) + num(item.w);
+            if (x > 0.001 && x < num(stock.ancho) - 0.001) {
+              positions.add(String(Math.round(x * 1000) / 1000));
+            }
+          });
+          total += positions.size * num(row.h);
+        });
+      }
+
+      return total;
+    }
+
+    function planCutLengthMm(plan) {
+      const stored = num(plan?.cutLengthMm);
+      return stored > 0 ? stored : calculateGuillotineCutLengthMm(plan);
+    }
+
+    function fmtML(mm) {
+      return `${fmt(num(mm) / 1000, 1)} ML`;
     }
 
     function findBestGuillotinePlacement(sheet, part) {
@@ -1777,6 +1875,7 @@
             shelves: sh.shelves,
             placements: sh.placements,
             wastes,
+            cutLengthMm: calculateGuillotineCutLengthMm(sh),
             usedArea,
             placedArea: pArea,
             wasteArea: Math.max(0, usedArea - pArea),
@@ -1787,6 +1886,7 @@
       const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
       const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
       const totalUsedWaste = usedPlans.reduce((acc, p) => acc + p.wasteArea, 0);
+      const totalCutLengthMm = usedPlans.reduce((acc, p) => acc + planCutLengthMm(p), 0);
 
       return {
         cutMode,
@@ -1797,6 +1897,7 @@
           yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
           usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
           waste: totalUsedWaste,
+          cutLengthMm: totalCutLengthMm,
           unplaced
         }
       };
@@ -1984,6 +2085,7 @@
             <div class="miniSummary">
               <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
               <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
+              <div class="miniBox"><div class="k">ML corte / lámina</div><div class="v">${fmtML(planCutLengthMm(plan))}</div></div>
               <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
               <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
               <div class="miniBox"><div class="k">Sobrantes visibles</div><div class="v">${fmt((plan.wastes || []).length, 0)}</div></div>
@@ -2479,6 +2581,10 @@ Banda de corte: ${p.cutBand || "—"}`;
               <div class="gV">${fmt(state.summary.placedParts || 0, 0)}</div>
             </div>
             <div class="gBox">
+              <div class="gK">ML corte total</div>
+              <div class="gV">${fmtML(state.summary.cutLengthMm || 0)}</div>
+            </div>
+            <div class="gBox">
               <div class="gK">Desperdicio total</div>
               <div class="gV">${fmtM2(state.summary.waste || 0)}</div>
             </div>
@@ -2517,6 +2623,7 @@ Banda de corte: ${p.cutBand || "—"}`;
               <div class="miniSummary">
                 <div class="miniBox"><div class="k">Lámina</div><div class="v">${fmt(plan.stock.ancho)} × ${fmt(plan.stock.largo)}</div></div>
                 <div class="miniBox"><div class="k">Piezas</div><div class="v">${fmt(plan.placements.length, 0)}</div></div>
+                <div class="miniBox"><div class="k">ML corte/lámina</div><div class="v">${fmtML(planCutLengthMm(plan))}</div></div>
                 <div class="miniBox"><div class="k">Área útil</div><div class="v">${fmtM2(plan.placedArea)}</div></div>
                 <div class="miniBox"><div class="k">Desperdicio</div><div class="v">${fmtM2(plan.wasteArea)}</div></div>
                 <div class="miniBox"><div class="k">Sobrantes</div><div class="v">${fmt((plan.wastes || []).length, 0)}</div></div>
@@ -2641,7 +2748,7 @@ Banda de corte: ${p.cutBand || "—"}`;
             }
             .globalSummary{
               display:grid;
-              grid-template-columns:repeat(5,1fr);
+              grid-template-columns:repeat(6,1fr);
               gap:4px;
               margin-bottom:6px;
             }
@@ -3014,6 +3121,9 @@ Banda de corte: ${p.cutBand || "—"}`;
       $("filterEspesor").addEventListener("change", e => { state.filters.espesor = e.target.value; renderCatalogModelDatalist(); });
       $("filterForma").addEventListener("change", e => { state.filters.forma = e.target.value; renderCatalogModelDatalist(); });
       $("catalogModelSearch").addEventListener("input", renderCatalogModelDatalist);
+      $("catalogModelSearch").addEventListener("focus", openCatalogModelPicker);
+      $("catalogModelSearch").addEventListener("click", openCatalogModelPicker);
+      $("catalogModelSearch").addEventListener("blur", restoreCatalogModelPickerValue);
 
       $("addCatalogModelBtn").addEventListener("click", addCatalogModel);
       $("addSheetBtn").addEventListener("click", addSheet);
