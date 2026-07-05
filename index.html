@@ -3041,16 +3041,7 @@ Banda de corte: ${p.cutBand || "—"}`;
         </head>
         <body>
           ${pagesHtml}
-        
-  <div id="processingModalBack" class="processingBack">
-    <div class="processingBox">
-      <div class="processingSpinner"></div>
-      <h2>Procesando optimización</h2>
-      <p>Calculando patrones de corte, rendimiento y sobrantes. No cierres esta ventana.</p>
-    </div>
-  </div>
-
-  <script>
+          <script>
             window.onload = function() {
               setTimeout(function() {
                 window.print();
