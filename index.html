@@ -831,7 +831,7 @@
       $("kpiPlacedParts").textContent = String(state.summary.placedParts || 0);
       $("kpiYieldLoaded").textContent = `${fmt(state.summary.yieldLoaded || 0, 1)}%`;
       $("kpiUsedYield").textContent = `${fmt(state.summary.usedYield || 0, 1)}%`;
-      $("kpiWaste").textContent = fmtM2(state.summary.waste || 0);
+      $("kpiWaste").textContent = `${fmt((state.summary.waste || 0) / 1000000, 1)} m²`;
       $("currentFolio").textContent = state.currentFolio || "—";
       $("currentOptName").textContent = state.currentOptimizationName || "—";
     }
