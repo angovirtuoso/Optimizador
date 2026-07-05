@@ -300,6 +300,57 @@
     .miniBox .k{font-size:var(--fs-xs);color:var(--muted)}
     .miniBox .v{font-size:18px;font-weight:700;margin-top:4px}
 
+
+
+    .processingBack{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.55);
+      backdrop-filter:blur(5px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:999;
+    }
+
+    .processingBack.show{display:flex}
+
+    .processingBox{
+      width:min(420px,92vw);
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:26px;
+      padding:28px;
+      box-shadow:var(--shadow);
+      text-align:center;
+    }
+
+    .processingSpinner{
+      width:54px;
+      height:54px;
+      border-radius:50%;
+      border:5px solid var(--line);
+      border-top-color:var(--primary);
+      margin:0 auto 16px;
+      animation:spin .85s linear infinite;
+    }
+
+    .processingBox h2{
+      margin:0;
+      font-size:22px;
+      letter-spacing:-.03em;
+    }
+
+    .processingBox p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+
     .modalBack{
       position:fixed;inset:0;background:rgba(2,6,23,.45);backdrop-filter:blur(4px);display:none;
       align-items:center;justify-content:center;padding:24px;z-index:50
@@ -815,6 +866,15 @@
       <div class="modalFooter">
         <button id="closeLoadModalBtn">Cerrar</button>
       </div>
+    </div>
+  </div>
+
+
+  <div id="processingModalBack" class="processingBack">
+    <div class="processingBox">
+      <div class="processingSpinner"></div>
+      <h2>Procesando optimización</h2>
+      <p>Calculando patrones de corte, rendimiento y sobrantes. No cierres esta ventana.</p>
     </div>
   </div>
 
@@ -1833,80 +1893,230 @@
       return wastes.sort((a, b) => b.area - a.area);
     }
 
-    function buildOptimizationResult(cutMode, allSheets, allParts, partTypes) {
-      const sheetInstances = allSheets.map(stock => makeSheet(stock, cutMode));
-      const unplaced = [];
-      let placedArea = 0;
-      let placedParts = 0;
 
-      allParts.forEach(part => {
-        const compatible = sheetInstances.filter(sh =>
-          sh.stock.material === part.material && String(sh.stock.espesor) === String(part.espesor)
-        );
+    function partTypeKey(part) {
+      return [
+        part.id || part.etiqueta || "",
+        part.material || "",
+        part.espesor || "",
+        num(part.anchoCorteOpt || part.width),
+        num(part.largoCorteOpt || part.height)
+      ].join("__");
+    }
 
-        let best = null;
-        compatible.forEach(sh => {
-          const candidate = findBestGuillotinePlacement(sh, part);
-          if (!candidate) return;
-          const sheetPenalty = sh.placements.length ? 0 : 1000000000000;
-          const score = candidate.score + sheetPenalty;
-          if (!best || score < best.score) best = { sheet: sh, candidate, score };
-        });
+    function makePartType(part) {
+      const qty = Math.max(0, Math.round(num(part.cantidad || part.quantity || part.remaining || 0)));
+      return {
+        ...part,
+        _typeKey: partTypeKey(part),
+        width: num(part.anchoCorteOpt || part.width),
+        height: num(part.largoCorteOpt || part.height),
+        area: area(part.anchoCorteOpt || part.width, part.largoCorteOpt || part.height),
+        quantity: qty,
+        remaining: qty
+      };
+    }
 
-        if (best) {
-          applyGuillotinePlacement(best.sheet, part, best.candidate);
-          placedArea += part.area;
-          placedParts += 1;
+    function buildCompactPartTypes(parts = state.selectedParts) {
+      const map = new Map();
+
+      (parts || []).forEach(part => {
+        const type = makePartType(part);
+        if (!(type.quantity > 0) || !(type.width > 0) || !(type.height > 0)) return;
+
+        if (!map.has(type._typeKey)) {
+          map.set(type._typeKey, type);
         } else {
-          unplaced.push(part);
+          const current = map.get(type._typeKey);
+          current.quantity += type.quantity;
+          current.remaining += type.quantity;
         }
       });
 
-      const usedPlans = sheetInstances
-        .filter(sh => sh.placements.length)
-        .map(sh => {
-          const usedArea = area(sh.stock.ancho, sh.stock.largo);
-          const pArea = sh.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
-          const wastes = buildGuillotineWastes(sh, partTypes);
-          return {
-            id: uid(),
-            stock: sh.stock,
-            cutMode: sh.cutMode,
-            shelves: sh.shelves,
-            placements: sh.placements,
-            wastes,
-            cutLengthMm: calculateGuillotineCutLengthMm(sh),
-            usedArea,
-            placedArea: pArea,
-            wasteArea: Math.max(0, usedArea - pArea),
-            utilization: usedArea ? (pArea / usedArea) * 100 : 0
-          };
+      return [...map.values()].sort((a, b) =>
+        b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height)
+      );
+    }
+
+    function clonePartTypes(partTypes = []) {
+      return (partTypes || []).map(p => ({ ...p, remaining: num(p.quantity) }));
+    }
+
+    function buildCompactSheetGroups(sheets = state.selectedSheets) {
+      const map = new Map();
+
+      (sheets || []).forEach(sheet => {
+        const count = Math.max(0, Math.round(num(sheet.cantidad || sheet.count || 0)));
+        if (!(count > 0) || !(num(sheet.ancho) > 0) || !(num(sheet.largo) > 0)) return;
+
+        const key = [sheet.material, sheet.espesor, num(sheet.ancho), num(sheet.largo)].join("__");
+        if (!map.has(key)) {
+          map.set(key, { ...sheet, count, cantidad: count });
+        } else {
+          const current = map.get(key);
+          current.count += count;
+          current.cantidad += count;
+        }
+      });
+
+      return [...map.values()];
+    }
+
+    function buildOneGuillotinePattern(cutMode, stock, partTypes) {
+      const sheet = makeSheet(stock, cutMode);
+      const maxItemsPerPattern = 20000;
+      let guard = 0;
+
+      while (guard++ < maxItemsPerPattern) {
+        let best = null;
+
+        partTypes.forEach(part => {
+          if (!(part.remaining > 0)) return;
+          if (part.material !== stock.material || String(part.espesor) !== String(stock.espesor)) return;
+
+          const candidate = findBestGuillotinePlacement(sheet, part);
+          if (!candidate) return;
+
+          const score = candidate.score - (part.area / 1000000);
+          if (!best || score < best.score) {
+            best = { part, candidate, score };
+          }
         });
 
-      const totalLoadedArea = allSheets.reduce((acc, s) => acc + area(s.ancho, s.largo), 0);
-      const totalUsedArea = usedPlans.reduce((acc, p) => acc + p.usedArea, 0);
-      const totalUsedWaste = usedPlans.reduce((acc, p) => acc + p.wasteArea, 0);
-      const totalCutLengthMm = usedPlans.reduce((acc, p) => acc + planCutLengthMm(p), 0);
+        if (!best) break;
+
+        applyGuillotinePlacement(sheet, best.part, best.candidate);
+        best.part.remaining -= 1;
+      }
+
+      return sheet;
+    }
+
+    function countPatternTypes(pattern) {
+      const counts = new Map();
+      (pattern.placements || []).forEach(p => {
+        const key = p._typeKey || partTypeKey(p);
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return counts;
+    }
+
+    function calculatePatternRepeat(patternCounts, partTypes, sheetCountRemaining) {
+      let repeat = Math.max(1, Math.floor(num(sheetCountRemaining) || 1));
+
+      for (const [key, countInPattern] of patternCounts.entries()) {
+        const part = partTypes.find(p => p._typeKey === key);
+        if (!part || !(countInPattern > 0)) return 1;
+
+        // Ya se descontó 1 patrón al construirlo. Aquí calculamos cuántas repeticiones extra caben.
+        const totalRepeatsForThisType = 1 + Math.floor(num(part.remaining) / countInPattern);
+        repeat = Math.min(repeat, totalRepeatsForThisType);
+      }
+
+      return Math.max(1, repeat);
+    }
+
+    function applyAdditionalPatternRepeats(patternCounts, partTypes, repeats) {
+      const extra = Math.max(0, Math.round(num(repeats) - 1));
+      if (!extra) return;
+
+      for (const [key, countInPattern] of patternCounts.entries()) {
+        const part = partTypes.find(p => p._typeKey === key);
+        if (part) part.remaining = Math.max(0, num(part.remaining) - countInPattern * extra);
+      }
+    }
+
+    function buildBulkOptimizationResult(cutMode, sheetGroups, basePartTypes) {
+      const partTypes = clonePartTypes(basePartTypes);
+      const usedPlans = [];
+      let placedArea = 0;
+      let placedParts = 0;
+      let usedSheets = 0;
+      let totalUsedArea = 0;
+      let totalUsedWaste = 0;
+      let totalCutLengthMm = 0;
+
+      const groups = (sheetGroups || []).map(g => ({ ...g, count: Math.max(0, Math.round(num(g.count || g.cantidad || 0))) }));
+
+      groups.forEach(stockGroup => {
+        let sheetCountRemaining = stockGroup.count;
+        const stock = {
+          ...stockGroup,
+          ancho: num(stockGroup.ancho),
+          largo: num(stockGroup.largo)
+        };
+
+        while (sheetCountRemaining > 0) {
+          const beforeRemaining = partTypes.reduce((acc, p) => acc + num(p.remaining), 0);
+          if (!beforeRemaining) break;
+
+          const pattern = buildOneGuillotinePattern(cutMode, stock, partTypes);
+          if (!pattern.placements.length) break;
+
+          const patternCounts = countPatternTypes(pattern);
+          const repeat = Math.min(sheetCountRemaining, calculatePatternRepeat(patternCounts, partTypes, sheetCountRemaining));
+          applyAdditionalPatternRepeats(patternCounts, partTypes, repeat);
+          sheetCountRemaining -= repeat;
+
+          const usedArea = area(stock.ancho, stock.largo);
+          const patternPlacedArea = pattern.placements.reduce((acc, p) => acc + area(p.w, p.h), 0);
+          const wastes = buildGuillotineWastes(pattern, basePartTypes);
+          const wasteArea = Math.max(0, usedArea - patternPlacedArea);
+          const cutLengthMm = calculateGuillotineCutLengthMm(pattern);
+
+          usedPlans.push({
+            id: uid(),
+            stock,
+            cutMode: pattern.cutMode,
+            shelves: pattern.shelves,
+            placements: pattern.placements,
+            wastes,
+            count: repeat,
+            cutLengthMm,
+            usedArea,
+            placedArea: patternPlacedArea,
+            wasteArea,
+            utilization: usedArea ? (patternPlacedArea / usedArea) * 100 : 0
+          });
+
+          usedSheets += repeat;
+          placedParts += pattern.placements.length * repeat;
+          placedArea += patternPlacedArea * repeat;
+          totalUsedArea += usedArea * repeat;
+          totalUsedWaste += wasteArea * repeat;
+          totalCutLengthMm += cutLengthMm * repeat;
+
+          const afterRemaining = partTypes.reduce((acc, p) => acc + num(p.remaining), 0);
+          if (afterRemaining >= beforeRemaining) break;
+        }
+      });
+
+      const totalLoadedArea = groups.reduce((acc, s) => acc + area(s.ancho, s.largo) * Math.max(0, Math.round(num(s.count))), 0);
+      const unplaced = partTypes
+        .filter(p => num(p.remaining) > 0)
+        .map(p => ({ ...p, cantidad: num(p.remaining), remainingQuantity: num(p.remaining) }));
+      const unplacedQty = unplaced.reduce((acc, p) => acc + num(p.remainingQuantity), 0);
 
       return {
         cutMode,
         usedPlans,
         summary: {
-          usedSheets: usedPlans.length,
+          usedSheets,
           placedParts,
           yieldLoaded: totalLoadedArea ? (placedArea / totalLoadedArea) * 100 : 0,
           usedYield: totalUsedArea ? (placedArea / totalUsedArea) * 100 : 0,
           waste: totalUsedWaste,
           cutLengthMm: totalCutLengthMm,
-          unplaced
+          unplaced,
+          unplacedQty
         }
       };
     }
 
     function chooseBestOptimization(results) {
       return results.sort((a, b) => {
-        const aUnplaced = a.summary.unplaced.length;
-        const bUnplaced = b.summary.unplaced.length;
+        const aUnplaced = num(a.summary.unplacedQty ?? a.summary.unplaced?.length ?? 0);
+        const bUnplaced = num(b.summary.unplacedQty ?? b.summary.unplaced?.length ?? 0);
         if (aUnplaced !== bUnplaced) return aUnplaced - bUnplaced;
         if (a.summary.usedSheets !== b.summary.usedSheets) return a.summary.usedSheets - b.summary.usedSheets;
         if (Math.abs(a.summary.usedYield - b.summary.usedYield) > 0.0001) return b.summary.usedYield - a.summary.usedYield;
@@ -1915,27 +2125,25 @@
     }
 
     function exactSheetsRequired(parts, stock) {
-      if (!parts.length) return 0;
-      const sorted = [...parts].sort((a, b) => b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height));
-      const results = ["rows", "columns"].map(mode => {
-        const sheets = [];
-        for (const part of sorted) {
-          let placed = false;
-          for (const sh of sheets) {
-            if (placeInSheet(sh, part)) {
-              placed = true;
-              break;
-            }
-          }
-          if (!placed) {
-            const sh = makeSheet(stock, mode);
-            if (!placeInSheet(sh, part)) return Infinity;
-            sheets.push(sh);
-          }
-        }
-        return sheets.length;
-      });
-      return Math.min(...results);
+      const compactParts = buildCompactPartTypes(parts);
+      if (!compactParts.length) return 0;
+
+      const virtualSheets = [{
+        ...stock,
+        material: stock.material,
+        espesor: stock.espesor,
+        ancho: num(stock.ancho),
+        largo: num(stock.largo),
+        count: 1000000000,
+        cantidad: 1000000000
+      }];
+
+      const best = chooseBestOptimization([
+        buildBulkOptimizationResult("rows", virtualSheets, compactParts),
+        buildBulkOptimizationResult("columns", virtualSheets, compactParts)
+      ]);
+
+      return num(best.summary.unplacedQty) > 0 ? Infinity : best.summary.usedSheets;
     }
 
     function buildPlanSignature(plan) {
@@ -1949,6 +2157,7 @@
         ancho: Math.round(num(plan.stock.ancho)),
         largo: Math.round(num(plan.stock.largo)),
         pcs: plan.placements.length,
+        cutMode: plan.cutMode || "rows",
         placements
       });
     }
@@ -1958,13 +2167,14 @@
       const map = new Map();
       plans.forEach((plan, idx) => {
         const sig = buildPlanSignature(plan);
+        const planCount = Math.max(1, Math.round(num(plan.count || 1)));
         if (!map.has(sig)) {
-          const group = { ...plan, count: 1, indices: [idx] };
+          const group = { ...plan, count: planCount, indices: [idx] };
           map.set(sig, group);
           groups.push(group);
         } else {
           const g = map.get(sig);
-          g.count += 1;
+          g.count += planCount;
           g.indices.push(idx);
         }
       });
@@ -2011,19 +2221,12 @@
           return;
         }
 
-        const allSheets = expandSheets();
-        const allParts = expandParts().sort((a, b) =>
-          b.area - a.area || Math.max(b.width, b.height) - Math.max(a.width, a.height)
-        );
-        const partTypes = state.selectedParts.map(p => ({
-          ...p,
-          width: p.anchoCorteOpt,
-          height: p.largoCorteOpt
-        }));
+        const sheetGroups = buildCompactSheetGroups();
+        const partTypes = buildCompactPartTypes();
 
         const best = chooseBestOptimization([
-          buildOptimizationResult("rows", allSheets, allParts, partTypes),
-          buildOptimizationResult("columns", allSheets, allParts, partTypes)
+          buildBulkOptimizationResult("rows", sheetGroups, partTypes),
+          buildBulkOptimizationResult("columns", sheetGroups, partTypes)
         ]);
 
         state.plans = groupPlans(best.usedPlans);
@@ -2346,11 +2549,11 @@ Banda de corte: ${p.cutBand || "—"}`;
       if (!state.selectedParts.length) notices.push("Aún no has agregado modelos para optimizar.");
       if (!state.selectedSheets.length) notices.push("Aún no has agregado láminas para optimizar.");
 
-      const expandedParts = expandParts();
+      const compactParts = buildCompactPartTypes();
 
-      if (expandedParts.length) {
+      if (compactParts.length) {
         const partGroups = {};
-        expandedParts.forEach(p => {
+        compactParts.forEach(p => {
           const key = `${p.material}__${p.espesor}`;
           partGroups[key] = partGroups[key] || { material: p.material, espesor: p.espesor, parts: [] };
           partGroups[key].parts.push(p);
@@ -2398,7 +2601,7 @@ Banda de corte: ${p.cutBand || "—"}`;
               largo: s.largo,
               total: 0
             };
-            loadedGroups[key].total += s.cantidad;
+            loadedGroups[key].total += Math.max(1, Math.round(num(s.cantidad || 1)));
           });
 
           Object.values(loadedGroups).forEach(g => {
@@ -2422,8 +2625,11 @@ Banda de corte: ${p.cutBand || "—"}`;
         });
       }
 
-      if (state.summary.unplaced && state.summary.unplaced.length) {
-        notices.push(`Hay ${state.summary.unplaced.length} pieza(s) sin colocar después de optimizar.`);
+      const unplacedQty = num(state.summary.unplacedQty || 0);
+      if (unplacedQty > 0) {
+        notices.push(`Hay ${fmt(unplacedQty, 0)} pieza(s) sin colocar después de optimizar.`);
+      } else if (state.summary.unplaced && state.summary.unplaced.length) {
+        notices.push(`Hay ${state.summary.unplaced.length} tipo(s) de pieza sin colocar después de optimizar.`);
       }
 
       if (!notices.length) setStatus($("noticeBox"), "Sin avisos críticos. La configuración actual luce consistente.", "ok");
@@ -2835,7 +3041,16 @@ Banda de corte: ${p.cutBand || "—"}`;
         </head>
         <body>
           ${pagesHtml}
-          <script>
+        
+  <div id="processingModalBack" class="processingBack">
+    <div class="processingBox">
+      <div class="processingSpinner"></div>
+      <h2>Procesando optimización</h2>
+      <p>Calculando patrones de corte, rendimiento y sobrantes. No cierres esta ventana.</p>
+    </div>
+  </div>
+
+  <script>
             window.onload = function() {
               setTimeout(function() {
                 window.print();
@@ -3107,13 +3322,44 @@ Banda de corte: ${p.cutBand || "—"}`;
     function openModal(id) { $(id).classList.add("show"); }
     function closeModal(id) { $(id).classList.remove("show"); }
 
+    function showProcessing(message = "Procesando optimización") {
+      const modal = $("processingModalBack");
+      if (!modal) return;
+      const title = modal.querySelector("h2");
+      if (title) title.textContent = message;
+      modal.classList.add("show");
+    }
+
+    function hideProcessing() {
+      const modal = $("processingModalBack");
+      if (!modal) return;
+      modal.classList.remove("show");
+    }
+
+    function waitForPaint() {
+      return new Promise(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      });
+    }
+
+    async function optimizeWithProcessingOverlay() {
+      showProcessing("Procesando optimización");
+      try {
+        await waitForPaint();
+        optimize();
+      } finally {
+        hideProcessing();
+      }
+    }
+
+
     function bindEvents() {
       $("darkModeToggle").addEventListener("change", e => {
         document.body.classList.toggle("dark", e.target.checked);
       });
 
       $("refreshBtn").addEventListener("click", refreshCatalogs);
-      $("optimizeBtn").addEventListener("click", optimize);
+      $("optimizeBtn").addEventListener("click", optimizeWithProcessingOverlay);
       $("printBtn").addEventListener("click", doPrint);
 
       $("filterCliente").addEventListener("change", e => { state.filters.cliente = e.target.value; renderCatalogModelDatalist(); });
