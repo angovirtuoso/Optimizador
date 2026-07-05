@@ -1024,6 +1024,43 @@
       return "rect";
     }
 
+    function normalizeRuleText(text) {
+      return String(text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .replace(/[._-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function isCutOnlyAcabado(acabado) {
+      const a = normalizeRuleText(acabado);
+
+      return (
+        a.includes("4LCC") ||
+        a.includes("4L CC") ||
+        a.includes("4L FM") ||
+        a.includes("FILO MUERTO") ||
+        a === "FM" ||
+        a === "4LFM"
+      );
+    }
+
+    function getManualDesbasteRule(forma, acabado) {
+      if (isCutOnlyAcabado(acabado)) {
+        return { desbaste: 0, trim: 0 };
+      }
+
+      const f = String(forma || "").toLowerCase();
+
+      if (f.includes("circ")) return { desbaste: 4, trim: 17 };
+      if (f.includes("oval") || f.includes("óval")) return { desbaste: 4, trim: 17 };
+      if (f.includes("esq")) return { desbaste: 2, trim: 17 };
+
+      return { desbaste: 2, trim: 0 };
+    }
+
     function convertToMm(value, unit) {
       const v = num(value);
       if (unit === "in") return v * 25.4;
@@ -1078,7 +1115,8 @@
     }
 
     function autoSuggestManualCutSizes() {
-      const forma = String($("manualForma").value || "").toLowerCase();
+      const forma = $("manualForma").value || "";
+      const acabado = $("manualAcabado")?.value || "";
 
       let anchoFinal = num($("manualAnchoFinal").value);
       let largoFinal = num($("manualLargoFinal").value);
@@ -1092,29 +1130,11 @@
 
       if (!(anchoFinal > 0) || !(largoFinal > 0)) return;
 
-      let desbaste = 0;
-      let trim = 0;
+      const rule = getManualDesbasteRule(forma, acabado);
 
-      if (forma.includes("rect")) {
-        desbaste = 2;
-        trim = 0;
-      } else if (forma.includes("circ")) {
-        desbaste = 4;
-        trim = 17;
-      } else if (forma.includes("oval") || forma.includes("óval")) {
-        desbaste = 4;
-        trim = 17;
-      } else if (forma.includes("esq")) {
-        desbaste = 2;
-        trim = 17;
-      } else {
-        desbaste = 2;
-        trim = 0;
-      }
-
-      $("manualTrimEspecial").value = trim;
-      $("manualAnchoCorte").value = Math.round((anchoFinal + desbaste) * 100) / 100;
-      $("manualLargoCorte").value = Math.round((largoFinal + desbaste) * 100) / 100;
+      $("manualTrimEspecial").value = rule.trim;
+      $("manualAnchoCorte").value = Math.round((anchoFinal + rule.desbaste) * 100) / 100;
+      $("manualLargoCorte").value = Math.round((largoFinal + rule.desbaste) * 100) / 100;
     }
 
     function suggestEditTrimByShape() {
@@ -1513,6 +1533,13 @@
       }
 
       const trim = shapeTrimPerSide(forma, trimManual);
+      const desbasteManual = Math.max(
+        0,
+        Math.round(Math.min(
+          anchoCorteBase - anchoFinal,
+          largoCorteBase - largoFinal
+        ) * 100) / 100
+      );
 
       const payload = {
         Activo: "Sí",
@@ -1527,7 +1554,7 @@
         Ancho_Final: anchoFinal,
         Largo_Final: largoFinal,
         Tolerancia_Final: 0,
-        Desbaste: 0,
+        Desbaste: desbasteManual,
         Ancho_Corte: anchoCorteBase,
         Largo_Corte: largoCorteBase,
         Trim_Especial: trim,
@@ -3377,6 +3404,7 @@ Banda de corte: ${p.cutBand || "—"}`;
       $("addManualModelBtn").addEventListener("click", addManualModel);
 
       $("manualForma").addEventListener("change", autoSuggestManualCutSizes);
+      $("manualAcabado").addEventListener("change", autoSuggestManualCutSizes);
       $("manualAnchoFinal").addEventListener("input", autoSuggestManualCutSizes);
       $("manualLargoFinal").addEventListener("input", autoSuggestManualCutSizes);
       $("manualUnit").addEventListener("change", () => {
